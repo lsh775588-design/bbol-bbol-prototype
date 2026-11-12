@@ -1,6 +1,5 @@
 package com.bbolbbol;
 
-import java.util.TimeZone;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
@@ -8,8 +7,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class BbolbbolApplication {
 
     public static void main(String[] args) {
-        // 서비스 기준 시간대는 항상 Asia/Seoul (주 시작은 월요일)
-        TimeZone.setDefault(TimeZone.getTimeZone("Asia/Seoul"));
+        // JVM 기본 시간대(Asia/Seoul)는 common.config.TimeConfig가 설정한다.
         SpringApplication.run(BbolbbolApplication.class, args);
     }
 }
