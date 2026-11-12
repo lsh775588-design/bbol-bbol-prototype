@@ -60,6 +60,8 @@
 - 0-1 repo 뼈대 완료(`main`).
 - 0-2 뼈대, 공통 응답, 에러 코드 완료(`feat/0-skeleton`).
 - 0-3 compose, 설정, PhotoStorage 포트, ERD 초안 완료(`feat/0-infra`). Docker가 없어서 compose는 미검증.
-- 0-4 보안 기반(`feat/0-security`) → 0-5 테스트(`test/0-common`) → 0-6 review 순서로 남았다.
-- 결정 대기: COMMON500 유지 여부, 성공 응답 기본 message 문구, `.gitattributes` 추가 여부, H2 `runtimeOnly` 분리(배포 전), 0-3 보고서의 OPEN 항목들.
+- 0-4 보안 기반 완료(`feat/0-security`): JWT 검증, AUTH401, local 전용 고정 userId 필터, 프레임워크 예외 404/405/415 매핑 수정. `.gitattributes`(LF 고정)도 이 브랜치에 추가했다.
+- 0-5 테스트(`test/0-common`) → 0-6 review → 1단계 순서로 남았다.
+- 사용자가 "끝까지 진행"을 지시했다. push, PR, 병합 금지와 쟁점 2~8 API 보류는 그대로다. 앱 프로젝트 생성(Kotlin + Compose + Retrofit)은 1단계에 포함해도 된다는 승인을 받았다. 마지막에 `docs/reports/final-report.md`(구현 기능, 사용 기술, Notion과 달라진 점)를 쓴다.
+- 결정 대기(가정으로 진행 중): COMMON404/405/415/500 유지 여부, 성공 응답 기본 message 문구, H2 `runtimeOnly` 분리(배포 전), 0-3·0-4 보고서의 OPEN 항목들.
 - 새 세션은 `git branch --show-current`와 `git log --oneline`으로 현재 위치를 확인한 뒤 이 목록의 다음 단계부터 이어간다. 진행 중인 에이전트가 있는지(`git status`가 깨끗한지)도 확인한다.
