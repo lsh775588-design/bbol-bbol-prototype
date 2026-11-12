@@ -7,10 +7,9 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
-import java.time.LocalDateTime;
-import java.time.ZonedDateTime;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.annotation.Validated;
@@ -74,9 +73,8 @@ public class TestSupportController {
         throw new ResponseStatusException(HttpStatus.valueOf(code), "reason-should-not-leak");
     }
 
-    @GetMapping("/time")
-    public Map<String, Object> time() {
-        return Map.of("zoned", ZonedDateTime.parse("2026-01-01T00:00:00Z"),
-                "local", LocalDateTime.of(2026, 1, 1, 9, 0));
+    @PostMapping("/created")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> created() {
+        return ApiResponse.createdResponse(Map.of("id", 1));
     }
 }
