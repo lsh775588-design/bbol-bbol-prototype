@@ -56,6 +56,10 @@
 - Python은 동작하지 않는다. 스크립트가 필요하면 node를 쓴다.
 
 ## 현재 진행 상황
-- 0-1 repo 뼈대 완료(main). 0-2 뼈대, 공통 응답, 에러 코드 완료(`feat/0-skeleton`).
-- 0-3 인프라(`feat/0-infra`), 0-4 보안 기반, 0-5 테스트, 0-6 review가 남았다.
-- 결정 대기: COMMON500 유지 여부, 성공 응답 기본 message 문구, `.gitattributes` 추가 여부.
+승인된 0단계 계획은 `docs/stage-0-plan.md`, 단계별 결과는 `docs/reports/`에 있다. 브랜치는 직전 브랜치에서 분기해 쌓는다(main에는 아직 병합하지 않았다).
+- 0-1 repo 뼈대 완료(`main`).
+- 0-2 뼈대, 공통 응답, 에러 코드 완료(`feat/0-skeleton`).
+- 0-3 compose, 설정, PhotoStorage 포트, ERD 초안 완료(`feat/0-infra`). Docker가 없어서 compose는 미검증.
+- 0-4 보안 기반(`feat/0-security`) → 0-5 테스트(`test/0-common`) → 0-6 review 순서로 남았다.
+- 결정 대기: COMMON500 유지 여부, 성공 응답 기본 message 문구, `.gitattributes` 추가 여부, H2 `runtimeOnly` 분리(배포 전), 0-3 보고서의 OPEN 항목들.
+- 새 세션은 `git branch --show-current`와 `git log --oneline`으로 현재 위치를 확인한 뒤 이 목록의 다음 단계부터 이어간다. 진행 중인 에이전트가 있는지(`git status`가 깨끗한지)도 확인한다.
