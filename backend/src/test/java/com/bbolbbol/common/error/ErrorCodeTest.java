@@ -59,7 +59,7 @@ class ErrorCodeTest {
     }
 
     @Test
-    @DisplayName("명세 코드 27개가 정확한 코드 문자열과 HTTP 상태로 존재한다")
+    @DisplayName("명세 코드 28개가 정확한 코드 문자열과 HTTP 상태로 존재한다")
     void specCodes() {
         Map<String, ErrorCode> map = byCode();
         SPEC.forEach((code, status) -> {
