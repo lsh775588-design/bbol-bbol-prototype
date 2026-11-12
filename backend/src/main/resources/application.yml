@@ -5,6 +5,10 @@ spring:
     url: ${MYSQL_URL:jdbc:mysql://localhost:3307/bbolbbol}
     username: ${MYSQL_USER:}
     password: ${MYSQL_PASSWORD:}
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    out-of-order: false
   jpa:
     open-in-view: false
     hibernate:

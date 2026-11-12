@@ -5,12 +5,16 @@ spring:
     username: sa
     password:
     driver-class-name: org.h2.Driver
+  flyway:
+    enabled: true
+    # 개발 전용 시드는 db/seed-local에 둔다(local 프로파일에서만 로드)
+    locations: classpath:db/migration,classpath:db/seed-local
   h2:
     console:
       enabled: false
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: validate   # 스키마는 Flyway가 소유한다. Hibernate는 테이블을 만들지 않는다
   data:
     redis:
       # Lettuce는 첫 명령 때 연결하므로 Redis가 없어도 기동은 막히지 않는다.

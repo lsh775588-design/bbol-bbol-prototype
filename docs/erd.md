@@ -165,3 +165,5 @@ erDiagram
 | 8 | 사진 개인정보 | `photo_key` 보유. key 규칙/EXIF 처리 미정 |
 
 그 외 확인이 필요한 항목: 로그인 시도 횟수 제한, 온보딩 관심 카테고리의 별도 테이블(`user_interests`) 사용 여부, 탈퇴 시 email UNIQUE 처리 방식, 장소 상세/조회용 인덱스.
+
+마이그레이션 번호 구역과 작성 규칙: [backend/src/main/resources/db/migration/README.md](../backend/src/main/resources/db/migration/README.md)
