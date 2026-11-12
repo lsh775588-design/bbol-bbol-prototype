@@ -73,7 +73,7 @@ class SecurityIntegrationTest {
     @Test
     @DisplayName("만료된 토큰 -> 401 AUTH401")
     void expired() throws Exception {
-        String t = Jwts.builder().subject("1")
+        String t = Jwts.builder().subject("1").claim("typ", "access")
                 .issuedAt(new Date(System.currentTimeMillis() - 7_200_000))
                 .expiration(new Date(System.currentTimeMillis() - 3_600_000))
                 .signWith(key(secret), Jwts.SIG.HS256).compact();
@@ -83,7 +83,7 @@ class SecurityIntegrationTest {
     @Test
     @DisplayName("다른 키로 서명한 토큰 -> 401")
     void wrongKey() throws Exception {
-        String t = Jwts.builder().subject("1").expiration(new Date(System.currentTimeMillis() + 60_000))
+        String t = Jwts.builder().subject("1").claim("typ", "access").expiration(new Date(System.currentTimeMillis() + 60_000))
                 .signWith(key("another-FAKE-key-0123456789-abcdefghijklmnop"), Jwts.SIG.HS256).compact();
         expect401(withHeader("Bearer " + t));
     }
@@ -93,15 +93,29 @@ class SecurityIntegrationTest {
     void algNone() throws Exception {
         Base64.Encoder enc = Base64.getUrlEncoder().withoutPadding();
         String h = enc.encodeToString("{\"alg\":\"none\"}".getBytes(StandardCharsets.UTF_8));
-        String p = enc.encodeToString(("{\"sub\":\"1\",\"exp\":"
+        String p = enc.encodeToString(("{\"sub\":\"1\",\"typ\":\"access\",\"exp\":"
                 + (System.currentTimeMillis() / 1000 + 600) + "}").getBytes(StandardCharsets.UTF_8));
         expect401(withHeader("Bearer " + h + "." + p + "."));
     }
 
     @Test
+    @DisplayName("typ 없는 토큰, typ=refresh 토큰 -> 401")
+    void wrongTokenType() throws Exception {
+        String noTyp = Jwts.builder().subject("1")
+                .expiration(new Date(System.currentTimeMillis() + 60_000))
+                .signWith(key(secret), Jwts.SIG.HS256).compact();
+        String refresh = Jwts.builder().subject("1").claim("typ", "refresh")
+                .expiration(new Date(System.currentTimeMillis() + 60_000))
+                .signWith(key(secret), Jwts.SIG.HS256).compact();
+        expect401(withHeader("Bearer " + noTyp));
+        expect401(withHeader("Bearer " + refresh));
+        withHeader("Bearer " + jwt.createAccessToken(1L)).andExpect(status().isOk());
+    }
+
+    @Test
     @DisplayName("숫자가 아닌 subject -> 401")
     void nonNumericSubject() throws Exception {
-        String t = Jwts.builder().subject("not-a-number")
+        String t = Jwts.builder().subject("not-a-number").claim("typ", "access")
                 .expiration(new Date(System.currentTimeMillis() + 60_000))
                 .signWith(key(secret), Jwts.SIG.HS256).compact();
         expect401(withHeader("Bearer " + t));

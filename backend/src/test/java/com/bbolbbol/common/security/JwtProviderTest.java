@@ -43,7 +43,7 @@ class JwtProviderTest {
         String t = p.createAccessToken(1L);
         String[] parts = t.split("\\.");
         String forgedPayload = Base64.getUrlEncoder().withoutPadding()
-                .encodeToString("{\"sub\":\"2\"}".getBytes(StandardCharsets.UTF_8));
+                .encodeToString("{\"sub\":\"2\",\"typ\":\"access\"}".getBytes(StandardCharsets.UTF_8));
         assertThat(p.parseUserId(parts[0] + "." + forgedPayload + "." + parts[2])).isEmpty();
         assertThat(p.parseUserId(parts[0] + "." + parts[1] + "." + parts[2].substring(1) + "A")).isEmpty();
         assertThat(p.parseUserId(t + "x")).isEmpty();
@@ -52,7 +52,7 @@ class JwtProviderTest {
     @Test
     @DisplayName("만료된 토큰은 거부")
     void expired() {
-        String t = Jwts.builder().subject("1")
+        String t = Jwts.builder().subject("1").claim("typ", "access")
                 .issuedAt(new Date(System.currentTimeMillis() - 7_200_000))
                 .expiration(new Date(System.currentTimeMillis() - 3_600_000))
                 .signWith(key(FAKE_SECRET), Jwts.SIG.HS256).compact();
@@ -69,7 +69,7 @@ class JwtProviderTest {
     @Test
     @DisplayName("다른 키로 서명한 토큰은 거부")
     void wrongKey() {
-        String t = Jwts.builder().subject("1").expiration(new Date(System.currentTimeMillis() + 60_000))
+        String t = Jwts.builder().subject("1").claim("typ", "access").expiration(new Date(System.currentTimeMillis() + 60_000))
                 .signWith(key(OTHER_SECRET), Jwts.SIG.HS256).compact();
         assertThat(p.parseUserId(t)).isEmpty();
     }
@@ -77,7 +77,7 @@ class JwtProviderTest {
     @Test
     @DisplayName("같은 키라도 HS256이 아닌 알고리즘(HS384)은 거부")
     void otherAlgorithm() {
-        String t = Jwts.builder().subject("1").expiration(new Date(System.currentTimeMillis() + 60_000))
+        String t = Jwts.builder().subject("1").claim("typ", "access").expiration(new Date(System.currentTimeMillis() + 60_000))
                 .signWith(key(FAKE_SECRET), Jwts.SIG.HS384).compact();
         assertThat(p.parseUserId(t)).isEmpty();
     }
@@ -87,10 +87,26 @@ class JwtProviderTest {
     void algNone() {
         Base64.Encoder enc = Base64.getUrlEncoder().withoutPadding();
         String header = enc.encodeToString("{\"alg\":\"none\"}".getBytes(StandardCharsets.UTF_8));
-        String payload = enc.encodeToString(("{\"sub\":\"1\",\"exp\":"
+        String payload = enc.encodeToString(("{\"sub\":\"1\",\"typ\":\"access\",\"exp\":"
                 + (System.currentTimeMillis() / 1000 + 600) + "}").getBytes(StandardCharsets.UTF_8));
         assertThat(p.parseUserId(header + "." + payload + ".")).isEmpty();
         assertThat(p.parseUserId(header + "." + payload)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("typ 클레임이 없거나 access가 아닌 토큰은 거부")
+    void typeClaimRequired() {
+        java.util.function.Function<String, String> build = typ -> {
+            var b = Jwts.builder().subject("1").expiration(new Date(System.currentTimeMillis() + 60_000));
+            if (typ != null) {
+                b.claim("typ", typ);
+            }
+            return b.signWith(key(FAKE_SECRET), Jwts.SIG.HS256).compact();
+        };
+        assertThat(p.parseUserId(build.apply(null))).isEmpty();
+        assertThat(p.parseUserId(build.apply("refresh"))).isEmpty();
+        assertThat(p.parseUserId(build.apply("ACCESS"))).isEmpty();
+        assertThat(p.parseUserId(build.apply("access"))).contains(1L);
     }
 
     @Test
@@ -99,11 +115,11 @@ class JwtProviderTest {
         assertThat(p.parseUserId("")).isEmpty();
         assertThat(p.parseUserId("garbage")).isEmpty();
         assertThat(p.parseUserId("a.b.c")).isEmpty();
-        String nonNumeric = Jwts.builder().subject("abc")
+        String nonNumeric = Jwts.builder().subject("abc").claim("typ", "access")
                 .expiration(new Date(System.currentTimeMillis() + 60_000))
                 .signWith(key(FAKE_SECRET), Jwts.SIG.HS256).compact();
         assertThat(p.parseUserId(nonNumeric)).isEmpty();
-        String noSubject = Jwts.builder()
+        String noSubject = Jwts.builder().claim("typ", "access")
                 .expiration(new Date(System.currentTimeMillis() + 60_000))
                 .signWith(key(FAKE_SECRET), Jwts.SIG.HS256).compact();
         assertThat(p.parseUserId(noSubject)).isEmpty();

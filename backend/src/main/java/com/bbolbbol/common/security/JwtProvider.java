@@ -17,7 +17,7 @@ import org.springframework.core.env.Profiles;
 import org.springframework.stereotype.Component;
 
 /**
- * Access token(HS256) 생성과 검증. subject = userId.
+ * Access token(HS256) 생성과 검증. subject = userId, typ = access.
  * 토큰 값과 비밀키는 절대 로그에 남기지 않는다.
  */
 @Component
@@ -26,6 +26,9 @@ public class JwtProvider {
     private static final Logger log = LoggerFactory.getLogger(JwtProvider.class);
     private static final int MIN_SECRET_BYTES = 32;
     private static final String ALG = "HS256";
+    /** 토큰 용도 클레임. access token만 허용하며, 다른 용도의 토큰(refresh, 인증 등)이 access로 통하지 못하게 한다. */
+    static final String CLAIM_TYPE = "typ";
+    static final String TYPE_ACCESS = "access";
 
     private final SecretKey key;
     private final long accessExpirationMs;
@@ -53,6 +56,7 @@ public class JwtProvider {
         Date now = new Date();
         return Jwts.builder()
                 .subject(String.valueOf(userId))
+                .claim(CLAIM_TYPE, TYPE_ACCESS)
                 .issuedAt(now)
                 .expiration(new Date(now.getTime() + accessExpirationMs))
                 .signWith(key, Jwts.SIG.HS256)
@@ -65,6 +69,10 @@ public class JwtProvider {
             Jws<Claims> jws = Jwts.parser().verifyWith(key).build().parseSignedClaims(token);
             if (!ALG.equals(jws.getHeader().getAlgorithm())) {
                 log.debug("JWT 거부: 허용되지 않은 알고리즘");
+                return Optional.empty();
+            }
+            if (!TYPE_ACCESS.equals(jws.getPayload().get(CLAIM_TYPE, String.class))) {
+                log.debug("JWT 거부: access 토큰이 아님");
                 return Optional.empty();
             }
             return Optional.of(Long.valueOf(jws.getPayload().getSubject()));
