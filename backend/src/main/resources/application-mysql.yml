@@ -1,0 +1,6 @@
+# mysql 프로파일: docker-compose의 MySQL 8 + Redis 7 사용. 실행: SPRING_PROFILES_ACTIVE=mysql
+# 값은 모두 환경변수(.env)로 주입한다: MYSQL_URL, MYSQL_USER, MYSQL_PASSWORD, REDIS_HOST, REDIS_PORT, REDIS_PASSWORD
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate   # 스키마는 마이그레이션으로 관리하고 앱은 검증만 한다

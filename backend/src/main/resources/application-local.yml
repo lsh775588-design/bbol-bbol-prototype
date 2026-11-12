@@ -1,0 +1,20 @@
+# local 프로파일: MySQL/Redis 없이 이 PC에서 기동한다. 실행: SPRING_PROFILES_ACTIVE=local ./gradlew bootRun
+spring:
+  datasource:
+    url: jdbc:h2:mem:bbolbbol;MODE=MySQL;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  h2:
+    console:
+      enabled: false
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+  data:
+    redis:
+      # Lettuce는 첫 명령 때 연결하므로 Redis가 없어도 기동은 막히지 않는다.
+      repositories:
+        enabled: false
+      connect-timeout: 1s
+      timeout: 1s

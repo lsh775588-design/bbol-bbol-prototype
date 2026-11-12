@@ -20,3 +20,19 @@ spring:
       password: ${REDIS_PASSWORD:}
   jackson:
     time-zone: Asia/Seoul
+
+# 비밀값은 환경변수로만 주입한다. 기본값은 비워 둔다(값 없으면 해당 기능 비활성/기동 시 검증 대상).
+jwt:
+  secret: ${JWT_SECRET:}
+  access-expiration: ${JWT_EXPIRATION:3600000}
+
+mail:
+  username: ${MAIL_USERNAME:}
+  password: ${MAIL_PASSWORD:}
+
+kakao:
+  rest-api-key: ${KAKAO_REST_API_KEY:}
+
+storage:
+  local:
+    path: ${STORAGE_LOCAL_PATH:./uploads}
