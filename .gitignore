@@ -1,0 +1,16 @@
+# build
+build/
+.gradle/
+out/
+*.class
+# IDE
+.idea/
+*.iml
+.vscode/
+# secrets / local
+.env
+*.local.env
+uploads/
+# OS
+.DS_Store
+Thumbs.db
