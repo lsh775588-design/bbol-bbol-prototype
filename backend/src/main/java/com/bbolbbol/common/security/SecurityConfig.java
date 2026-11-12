@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletResponse;
 import java.nio.charset.StandardCharsets;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -24,10 +23,13 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http, JwtProvider jwtProvider,
-                                           UserStatusChecker userStatusChecker,
+                                           ObjectProvider<UserStatusChecker> userStatusChecker,
                                            ObjectProvider<LocalFixedUserFilter> localFixedUserFilter,
                                            ObjectMapper objectMapper) throws Exception {
-        JwtAuthenticationFilter jwtFilter = new JwtAuthenticationFilter(jwtProvider, userStatusChecker);
+        // user 도메인이 UserStatusChecker를 구현하기 전까지 모든 사용자를 활성으로 본다.
+        // 구현 빈이 등록되면 자동으로 그것을 쓴다(기본 빈을 두지 않아 구현 빈과 충돌하지 않는다).
+        UserStatusChecker checker = userStatusChecker.getIfAvailable(() -> userId -> true);
+        JwtAuthenticationFilter jwtFilter = new JwtAuthenticationFilter(jwtProvider, checker);
         http.csrf(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
@@ -44,13 +46,6 @@ public class SecurityConfig {
         // DEV ONLY: local 프로파일에서만 존재한다. JWT 필터 뒤에 두어 유효 토큰이 우선한다.
         localFixedUserFilter.ifAvailable(f -> http.addFilterAfter(f, JwtAuthenticationFilter.class));
         return http.build();
-    }
-
-    /** user 도메인이 UserStatusChecker를 구현하기 전까지 모든 사용자를 활성으로 본다. */
-    @Bean
-    @ConditionalOnMissingBean(UserStatusChecker.class)
-    public UserStatusChecker defaultUserStatusChecker() {
-        return userId -> true;
     }
 
     private AuthenticationEntryPoint entryPoint(ObjectMapper objectMapper) {
