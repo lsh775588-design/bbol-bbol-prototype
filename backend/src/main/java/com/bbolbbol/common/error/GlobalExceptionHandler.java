@@ -7,6 +7,10 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.ErrorResponse;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -69,8 +73,32 @@ public class GlobalExceptionHandler {
         return badRequest(List.of());
     }
 
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ApiResponse<Object>> handleNotFound(NoResourceFoundException e) {
+        return of(ErrorCode.COMMON404);
+    }
+
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ApiResponse<Object>> handleMethodNotSupported(HttpRequestMethodNotSupportedException e) {
+        return of(ErrorCode.COMMON405);
+    }
+
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    public ResponseEntity<ApiResponse<Object>> handleMediaTypeNotSupported(HttpMediaTypeNotSupportedException e) {
+        return of(ErrorCode.COMMON415);
+    }
+
+    private ResponseEntity<ApiResponse<Object>> of(ErrorCode ec) {
+        return ResponseEntity.status(ec.getStatus()).body(ApiResponse.error(ec, null));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Object>> handleException(Exception e) {
+        // 그 밖의 4xx 프레임워크 예외(ErrorResponse)는 상태를 유지하고 COMMON400 코드를 쓴다. 메시지는 노출하지 않는다.
+        if (e instanceof ErrorResponse er && er.getStatusCode().is4xxClientError()) {
+            return ResponseEntity.status(er.getStatusCode())
+                    .body(ApiResponse.error(ErrorCode.COMMON400, null));
+        }
         // 스택/메시지는 로그에만 남기고 응답에는 노출하지 않는다.
         log.error("Unhandled exception", e);
         ErrorCode ec = ErrorCode.COMMON500;

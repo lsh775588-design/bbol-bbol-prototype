@@ -33,6 +33,12 @@ public enum ErrorCode {
     FILE413("FILE413", HttpStatus.PAYLOAD_TOO_LARGE, "파일 용량 10MB 초과"),
 
     // NOT IN SPEC: added minimal, needs team confirmation
+    COMMON404("COMMON404", HttpStatus.NOT_FOUND, "존재하지 않는 경로"),
+    // NOT IN SPEC: added minimal, needs team confirmation
+    COMMON405("COMMON405", HttpStatus.METHOD_NOT_ALLOWED, "지원하지 않는 HTTP 메서드"),
+    // NOT IN SPEC: added minimal, needs team confirmation
+    COMMON415("COMMON415", HttpStatus.UNSUPPORTED_MEDIA_TYPE, "지원하지 않는 Content-Type"),
+    // NOT IN SPEC: added minimal, needs team confirmation
     COMMON500("COMMON500", HttpStatus.INTERNAL_SERVER_ERROR, "서버 오류");
 
     private final String code;
