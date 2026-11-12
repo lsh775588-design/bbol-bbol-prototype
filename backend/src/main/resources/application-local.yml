@@ -18,3 +18,12 @@ spring:
         enabled: false
       connect-timeout: 1s
       timeout: 1s
+
+# DEV ONLY: 아래 값은 일부러 가짜로 적은 개발용 값이다. 운영에서는 JWT_SECRET 환경변수를 쓴다.
+jwt:
+  secret: dev-only-FAKE-local-secret-do-not-use-in-prod-0123456789
+
+bbolbbol:
+  local:
+    # DEV ONLY: 토큰이 없으면 이 userId로 인증한다(LocalFixedUserFilter). 비우면 비활성.
+    fixed-user-id: 1
