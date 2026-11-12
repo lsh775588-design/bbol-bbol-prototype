@@ -35,6 +35,9 @@
 - 명세와 다르게 만들어야 할 때는 임의로 바꾸지 말고 사용자에게 묻는다. 명세의 불규칙한 에러 코드 번호도 그대로 옮긴다.
 - 비밀값(JWT 키, Gmail, 카카오 키, DB 비밀번호)은 코드와 문서와 로그에 쓰지 않고 환경변수로만 쓴다. 값을 출력하지 말고 필요하면 파일 이름과 줄 번호만 말한다.
 - 에뮬레이터나 실기기 확인은 사용자가 한다. 사용자가 "테스트 끝났다"고 하면 그다음 작업으로 넘어간다.
+- 날짜와 시각 계산("오늘", "이번 주 월요일")은 `Clock`(Asia/Seoul, `common/config/TimeConfig`) 빈을 주입해서 쓴다. `LocalDate.now()`를 인자 없이 쓰지 않는다.
+- 생성 API(가입, 도착 인증, 사진 업로드)는 `ApiResponse.createdResponse()`로 실제 HTTP 201을 돌려준다.
+- 단계마다 에뮬레이터 스크린샷을 `docs/screenshots/stage-N/`에 남기고 보고서에 설명한다(AVD `Medium_Phone`, 서버는 `local` 프로파일, 앱은 `10.0.2.2:8080`). 기기 계기 테스트는 앱 데이터를 지우므로 돌리지 않는다.
 - 판단이 사용자의 몫인 것(명세 변경, 쟁점 결정, 외부 공개)은 묻고, 그 밖의 결정은 권장안을 정해 진행하고 보고한다.
 
 ## git 규칙
@@ -61,7 +64,9 @@
 - 0-2 뼈대, 공통 응답, 에러 코드 완료(`feat/0-skeleton`).
 - 0-3 compose, 설정, PhotoStorage 포트, ERD 초안 완료(`feat/0-infra`). Docker가 없어서 compose는 미검증.
 - 0-4 보안 기반 완료(`feat/0-security`): JWT 검증, AUTH401, local 전용 고정 userId 필터, 프레임워크 예외 404/405/415 매핑 수정. `.gitattributes`(LF 고정)도 이 브랜치에 추가했다.
-- 0-5 테스트(`test/0-common`) → 0-6 review → 1단계 순서로 남았다.
+- 0-5 테스트 완료(`test/0-common`, 66개 중 65개 통과, 1개 건너뜀).
+- 0-6 review(조건부 통과)와 수정 완료(`feat/0-fixes`): Redis 비밀번호와 로컬 바인딩, `UserStatusChecker` 방식, `typ=access`, `Clock` 빈, `createdResponse`. 테스트 68개 통과. 보고서는 `docs/reports/stage-0-6.md`.
+- 다음은 1단계(`docs/stage-1-plan.md`)와 단계별 에뮬레이터 스크린샷(`docs/screenshots/stage-N/`)이다. 0단계 스크린샷은 에뮬레이터 브라우저로 `/health`를 찍는다.
 - 사용자가 "끝까지 진행"을 지시했다. push, PR, 병합 금지와 쟁점 2~8 API 보류는 그대로다. 앱 프로젝트 생성(Kotlin + Compose + Retrofit)은 1단계에 포함해도 된다는 승인을 받았다. 마지막에 `docs/reports/final-report.md`(구현 기능, 사용 기술, Notion과 달라진 점)를 쓴다.
 - 결정 대기(가정으로 진행 중): COMMON404/405/415/500 유지 여부, 성공 응답 기본 message 문구, H2 `runtimeOnly` 분리(배포 전), 0-3·0-4 보고서의 OPEN 항목들.
 - 새 세션은 `git branch --show-current`와 `git log --oneline`으로 현재 위치를 확인한 뒤 이 목록의 다음 단계부터 이어간다. 진행 중인 에이전트가 있는지(`git status`가 깨끗한지)도 확인한다.
