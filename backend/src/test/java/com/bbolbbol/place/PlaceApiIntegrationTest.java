@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.bbolbbol.common.security.JwtProvider;
 import com.bbolbbol.place.domain.HotType;
+import com.bbolbbol.support.AllUsersActiveConfig;
 import com.bbolbbol.place.domain.Place;
 import com.bbolbbol.place.domain.PlaceCategory;
 import com.bbolbbol.place.repository.PlaceCategoryRepository;
@@ -17,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
@@ -25,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
+@Import(AllUsersActiveConfig.class) // 토큰의 userId가 users 테이블에 없어도 장소 API 자체를 검증한다
 @Transactional
 class PlaceApiIntegrationTest {
 
