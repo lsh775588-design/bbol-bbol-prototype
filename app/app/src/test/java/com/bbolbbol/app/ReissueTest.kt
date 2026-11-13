@@ -60,6 +60,7 @@ class ReissueTest {
                         when (reissueMode) {
                             "ok" -> json(200, Json.ok("""{"accessToken":"new-acc","refreshToken":"new-ref"}""")).setBodyDelay(300, java.util.concurrent.TimeUnit.MILLISECONDS)
                             "4012" -> json(401, Json.error("AUTH4012"))
+                            "503" -> json(503, Json.error("COMMON500"))
                             else -> MockResponse().setSocketPolicy(SocketPolicy.DISCONNECT_AFTER_REQUEST)
                         }
                     }
@@ -154,13 +155,26 @@ class ReissueTest {
     }
 
     @Test
-    fun reissueNetworkFailureClearsTokens() = runBlocking {
+    fun reissueNetworkFailureKeepsTokens() = runBlocking {
         reissueMode = "network"
         val r = apiCall { api.me() }
         assertTrue(r is ApiResult.Failure)
         assertEquals(1, reissueCount.get())
-        assertFalse(session.loggedIn.value)
-        assertNull(store.refreshToken)
+        assertEquals(1, meCount.get()) // 재시도 없음
+        assertTrue(session.loggedIn.value)
+        assertEquals("old-ref", store.refreshToken)
+        assertEquals("old-acc", session.accessToken)
+    }
+
+    @Test
+    fun reissue503KeepsTokensAndDoesNotLoop() = runBlocking {
+        reissueMode = "503"
+        val r = apiCall { api.me() }
+        assertTrue(r is ApiResult.Failure)
+        assertEquals(1, reissueCount.get())
+        assertEquals(1, meCount.get())
+        assertTrue(session.loggedIn.value)
+        assertEquals("old-ref", store.refreshToken)
     }
 
     @Test

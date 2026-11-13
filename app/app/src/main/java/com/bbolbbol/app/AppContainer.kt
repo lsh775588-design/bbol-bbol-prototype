@@ -16,7 +16,7 @@ import com.bbolbbol.app.ui.photo.installPhotoImageLoader
 import com.bbolbbol.app.data.api.ReissueApi
 import com.bbolbbol.app.data.api.TokenRefreshAuthenticator
 import com.bbolbbol.app.data.repository.AuthExtraRepository
-import com.bbolbbol.app.ui.auth.KakaoTokenProviders
+import com.bbolbbol.app.ui.auth.createDevTools
 import com.bbolbbol.app.data.local.AuthSession
 import com.bbolbbol.app.data.local.EncryptedTokenStore
 import com.bbolbbol.app.data.repository.AuthRepository
@@ -34,7 +34,7 @@ import java.util.concurrent.TimeUnit
 
 /** 수동 DI. 화면 ViewModel은 여기서 저장소를 가져다 쓴다. */
 class AppContainer(context: Context) {
-    val session = AuthSession(EncryptedTokenStore(context))
+    val session = AuthSession(EncryptedTokenStore.createResilient(context))
 
     // 재발급 호출 전용 클라이언트: 인터셉터/Authenticator가 없어서 재발급이 재발급을 부르지 않는다.
     private val reissueApi: ReissueApi = Retrofit.Builder()
@@ -63,7 +63,9 @@ class AppContainer(context: Context) {
 
     val authRepository = AuthRepository(api, session)
     val authExtraRepository = AuthExtraRepository(retrofit.create(AuthExtraApi::class.java), session)
-    val kakaoTokenProvider = KakaoTokenProviders.create(BuildConfig.DEBUG)
+    /** 개발 전용 도구. debug 소스셋에서만 실제 구현이 컴파일된다(release는 NoDevTools). */
+    val devTools = createDevTools()
+    val kakaoTokenProvider = devTools.kakaoProvider
     val userRepository = UserRepository(api)
     val placeRepository = PlaceRepository(api)
     val completionRepository = CompletionRepository(api)

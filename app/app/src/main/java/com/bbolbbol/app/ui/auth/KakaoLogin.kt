@@ -24,22 +24,10 @@ interface KakaoTokenProvider {
     suspend fun getToken(manualInput: String?): String?
 }
 
-/** debug 전용: 서버 FakeKakaoClient 형식(`DEV-KAKAO|<id>|<email>|<nick>`)의 문자열을 직접 입력받는다. */
-class DevKakaoTokenProvider : KakaoTokenProvider {
-    override val mode = KakaoTokenProvider.Mode.DEV_MANUAL
-    override suspend fun getToken(manualInput: String?): String? = manualInput?.trim()?.takeIf { it.isNotEmpty() }
-}
-
 /** release 기본값: 아직 카카오 SDK가 없다. 버튼은 "준비 중"으로 비활성화된다. */
 class UnavailableKakaoTokenProvider : KakaoTokenProvider {
     override val mode = KakaoTokenProvider.Mode.UNAVAILABLE
     override suspend fun getToken(manualInput: String?): String? = null
-}
-
-object KakaoTokenProviders {
-    /** release(debug=false)에서는 개발용 제공자를 절대 돌려주지 않는다. */
-    fun create(debug: Boolean): KakaoTokenProvider =
-        if (debug) DevKakaoTokenProvider() else UnavailableKakaoTokenProvider()
 }
 
 data class KakaoLoginUiState(

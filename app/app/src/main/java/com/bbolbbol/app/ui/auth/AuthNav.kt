@@ -34,13 +34,13 @@ fun NavGraphBuilder.authFlowDestinations(
         val vm: SignupFlowViewModel = viewModel(
             factory = vmFactory { SignupFlowViewModel(container.authRepository, container.authExtraRepository) },
         )
-        SignupFlowScreen(vm, onBack = { nav.popBackStack() })
+        SignupFlowScreen(vm, container.devTools, onBack = { nav.popBackStack() })
     }
     composable(AuthRoutes.PASSWORD_RESET) {
         val vm: PasswordResetViewModel = viewModel(
             factory = vmFactory { PasswordResetViewModel(container.authExtraRepository) },
         )
-        PasswordResetScreen(vm, onBack = { nav.popBackStack() }, onDone = {
+        PasswordResetScreen(vm, container.devTools, onBack = { nav.popBackStack() }, onDone = {
             onPasswordResetDone()
             nav.popBackStack()
         })

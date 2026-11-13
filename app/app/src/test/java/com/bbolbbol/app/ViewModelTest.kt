@@ -11,8 +11,6 @@ import com.bbolbbol.app.ui.map.JONGNO_LNG
 import com.bbolbbol.app.ui.map.LocationMode
 import com.bbolbbol.app.ui.map.MapViewModel
 import com.bbolbbol.app.ui.me.MeViewModel
-import com.bbolbbol.app.ui.signup.SignupUiState
-import com.bbolbbol.app.ui.signup.SignupViewModel
 import com.bbolbbol.app.util.ErrorMessages
 import com.bbolbbol.app.util.Validators
 import org.junit.After
@@ -54,91 +52,6 @@ class ViewModelTest {
         vm.submit()
         waitUntil { fx.session.loggedIn.value }
         assertNull(vm.state.value.error)
-    }
-
-    @Test
-    fun signupMapsFieldErrorsFromCommon400() {
-        fx.enqueue(
-            400,
-            Json.error(
-                "COMMON400",
-                """{"errors":[{"field":"nickname","reason":"닉네임 오류"},{"field":"password","reason":"비밀번호 오류"}]}""",
-            ),
-        )
-        val vm = signupVm()
-        vm.submit()
-        waitUntil { !vm.state.value.loading && vm.state.value.nicknameError != null }
-        assertEquals("닉네임 오류", vm.state.value.nicknameError)
-        assertEquals("비밀번호 오류", vm.state.value.passwordError)
-        assertNull(vm.state.value.formError)
-        assertEquals(
-            """{"verificationToken":"dev:a@b.com","password":"Passw0rd!","nickname":"뽈뽈이"}""",
-            fx.server.takeRequest().body.readUtf8(),
-        )
-    }
-
-    @Test
-    fun signupMapsBusinessCodes() {
-        val cases = listOf<Pair<String, (SignupUiState) -> String?>>(
-            "USER409" to { it.emailError },
-            "USER4092" to { it.nicknameError },
-            "USER4001" to { it.nicknameError },
-            "EMAIL4003" to { it.tokenError },
-        )
-        for ((code, pick) in cases) {
-            fx.enqueue(400, Json.error(code))
-            val vm = signupVm()
-            vm.submit()
-            waitUntil { !vm.state.value.loading }
-            assertEquals(code, ErrorMessages.forCode(code), pick(vm.state.value))
-        }
-    }
-
-    @Test
-    fun signupSuccessStoresTokens() {
-        fx.enqueue(201, Json.TOKENS)
-        val vm = signupVm()
-        vm.submit()
-        waitUntil { fx.session.loggedIn.value }
-    }
-
-    @Test
-    fun signupValidatesLocallyWithoutCallingServer() {
-        val vm = SignupViewModel(auth)
-        vm.submit()
-        val s = vm.state.value
-        assertNotNull(s.emailError)
-        assertNotNull(s.passwordError)
-        assertNotNull(s.nicknameError)
-        assertNotNull(s.tokenError)
-        assertEquals(0, fx.server.requestCount)
-    }
-
-    @Test
-    fun emailAvailabilityOnBlur() {
-        fx.enqueue(200, Json.ok("""{"available":false,"reason":"이미 가입된 이메일입니다."}"""))
-        val vm = SignupViewModel(auth)
-        vm.onEmail("a@b.com")
-        vm.checkEmail()
-        waitUntil { vm.state.value.emailError != null }
-        assertEquals("이미 가입된 이메일입니다.", vm.state.value.emailError)
-        assertFalse(vm.state.value.emailOk)
-        assertTrue(fx.server.takeRequest().path!!.startsWith("/auth/email-availability?email=a%40b.com"))
-    }
-
-    @Test
-    fun nicknameAvailabilityOk() {
-        fx.enqueue(200, Json.ok("""{"available":true,"reason":null}"""))
-        val vm = SignupViewModel(auth)
-        vm.onNickname("뽈뽈이")
-        vm.checkNickname()
-        waitUntil { vm.state.value.nicknameOk }
-    }
-
-    @Test
-    fun buildTokenAppendsEmailOnlyWhenMissing() {
-        assertEquals("dev:a@b.com", SignupViewModel.buildToken(" dev ", "a@b.com"))
-        assertEquals("dev:x@y.com", SignupViewModel.buildToken("dev:x@y.com", "a@b.com"))
     }
 
     @Test
@@ -201,13 +114,6 @@ class ViewModelTest {
         assertTrue(s.places[0].isHot)
         fx.server.takeRequest()
         assertTrue(fx.server.takeRequest().path!!.contains("lat=37.5729&lng=126.9794"))
-    }
-
-    private fun signupVm(): SignupViewModel = SignupViewModel(auth).apply {
-        onEmail("a@b.com")
-        onPassword("Passw0rd!")
-        onNickname("뽈뽈이")
-        onDevToken("dev")
     }
 
     private fun waitUntil(timeoutMs: Long = 5000, cond: () -> Boolean) {

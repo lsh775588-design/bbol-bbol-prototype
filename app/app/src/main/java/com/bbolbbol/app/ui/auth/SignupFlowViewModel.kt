@@ -6,7 +6,6 @@ import com.bbolbbol.app.data.api.ApiResult
 import com.bbolbbol.app.data.api.EmailPurpose
 import com.bbolbbol.app.data.repository.AuthExtraRepository
 import com.bbolbbol.app.data.repository.AuthRepository
-import com.bbolbbol.app.ui.signup.SignupViewModel
 import com.bbolbbol.app.util.ErrorMessages
 import com.bbolbbol.app.util.Validators
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -78,15 +77,14 @@ class SignupFlowViewModel(
         }
     }
 
-    /** debug 빌드 전용 지름길. 화면이 BuildConfig.DEBUG일 때만 부른다. 이메일이 없으면 토큰의 ':' 뒤 이메일을 쓴다. */
-    fun useDevToken(devToken: String) {
-        val email = codeFlow.state.value.email
-        if (devToken.isBlank()) return
-        if (!Validators.isValidEmail(email)) {
+    /** 개발용 지름길(DevTools.SignupShortcut)이 만든 verificationToken으로 코드 단계를 건너뛴다. */
+    fun applyVerificationToken(token: String) {
+        if (token.isBlank()) return
+        if (!Validators.isValidEmail(codeFlow.state.value.email)) {
             codeFlow.send() // 이메일 형식 오류를 화면에 보여준다(서버 호출은 하지 않는다)
             return
         }
-        codeFlow.skipWithToken(SignupViewModel.buildToken(devToken, email))
+        codeFlow.skipWithToken(token)
     }
 
     fun submit() {

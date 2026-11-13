@@ -56,8 +56,6 @@ import com.bbolbbol.app.ui.stats.StatsScreen
 import com.bbolbbol.app.ui.stats.StatsViewModel
 import com.bbolbbol.app.ui.recommend.RecommendScreen
 import com.bbolbbol.app.ui.recommend.RecommendViewModel
-import com.bbolbbol.app.ui.signup.SignupScreen
-import com.bbolbbol.app.ui.signup.SignupViewModel
 import com.bbolbbol.app.ui.theme.BbolColors
 import com.bbolbbol.app.ui.auth.AccountSection
 import com.bbolbbol.app.ui.auth.AccountViewModel
@@ -65,10 +63,10 @@ import com.bbolbbol.app.ui.auth.AuthRoutes
 import com.bbolbbol.app.ui.auth.KakaoLoginViewModel
 import com.bbolbbol.app.ui.auth.LoginExtras
 import com.bbolbbol.app.ui.auth.authFlowDestinations
+import com.bbolbbol.app.ui.auth.checkOnboardingOnStart
 
 object Routes {
     const val LOGIN = "login"
-    const val SIGNUP = "signup"
     const val HOME = "home"
     const val MAP = "map"
     const val RANKING = "ranking"
@@ -115,10 +113,15 @@ fun AppNav(container: AppContainer) {
     // 로그인 상태가 바뀌면(로그인 성공, 로그아웃, AUTH401로 토큰 삭제) 백스택을 비우고 이동한다.
     LaunchedEffect(loggedIn) {
         val route = nav.currentDestination?.route
-        val preLogin = route == Routes.LOGIN || route == Routes.SIGNUP ||
+        val preLogin = route == Routes.LOGIN ||
             route == AuthRoutes.SIGNUP_FLOW || route == AuthRoutes.PASSWORD_RESET
         if (loggedIn && preLogin) nav.resetTo(if (onboardingRequired) AuthRoutes.ONBOARDING else Routes.HOME)
         if (!loggedIn && route != null && !preLogin) nav.resetTo(Routes.LOGIN)
+    }
+
+    // 앱 시작 시 저장된 토큰이 있으면 온보딩 완료 여부를 한 번 확인한다(실패해도 진입을 막지 않는다).
+    LaunchedEffect(Unit) {
+        if (checkOnboardingOnStart(container.userRepository, container.session)) nav.navigate(AuthRoutes.ONBOARDING)
     }
 
     Scaffold(
@@ -161,16 +164,12 @@ fun AppNav(container: AppContainer) {
                     vm,
                     onSignup = { nav.navigate(AuthRoutes.SIGNUP_FLOW) },
                     extras = {
-                        LoginExtras(kakaoVm, resetSucceeded, onForgotPassword = {
+                        LoginExtras(kakaoVm, container.devTools, resetSucceeded, onForgotPassword = {
                             resetSucceeded = false
                             nav.navigate(AuthRoutes.PASSWORD_RESET)
                         })
                     },
                 )
-            }
-            composable(Routes.SIGNUP) {
-                val vm: SignupViewModel = viewModel(factory = factory { SignupViewModel(container.authRepository) })
-                SignupScreen(vm, onBack = { nav.popBackStack() })
             }
             composable(Routes.HOME) {
                 val vm: HomeViewModel = viewModel(
