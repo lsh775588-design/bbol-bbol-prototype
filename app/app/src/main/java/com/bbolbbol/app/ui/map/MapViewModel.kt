@@ -54,7 +54,7 @@ data class ArrivalFix(val lat: Double, val lng: Double, val accuracy: Double, va
 
 sealed interface ArrivalOutcome {
     data class Success(val result: CompletionResponse) : ArrivalOutcome
-    data class Error(val message: String) : ArrivalOutcome
+    data class Error(val message: String, val code: String? = null) : ArrivalOutcome
 }
 
 const val JONGNO_LAT = 37.5729
@@ -140,7 +140,7 @@ class MapViewModel(
                     refreshAfterArrival(placeId)
                 }
                 else -> _state.update {
-                    it.copy(arriving = false, arrivalOutcome = ArrivalOutcome.Error(ErrorMessages.message(r)))
+                    it.copy(arriving = false, arrivalOutcome = ArrivalOutcome.Error(ErrorMessages.message(r), (r as? ApiResult.Failure)?.code))
                 }
             }
         }

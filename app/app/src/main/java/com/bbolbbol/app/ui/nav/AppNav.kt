@@ -59,6 +59,12 @@ import com.bbolbbol.app.ui.recommend.RecommendViewModel
 import com.bbolbbol.app.ui.signup.SignupScreen
 import com.bbolbbol.app.ui.signup.SignupViewModel
 import com.bbolbbol.app.ui.theme.BbolColors
+import com.bbolbbol.app.ui.auth.AccountSection
+import com.bbolbbol.app.ui.auth.AccountViewModel
+import com.bbolbbol.app.ui.auth.AuthRoutes
+import com.bbolbbol.app.ui.auth.KakaoLoginViewModel
+import com.bbolbbol.app.ui.auth.LoginExtras
+import com.bbolbbol.app.ui.auth.authFlowDestinations
 
 object Routes {
     const val LOGIN = "login"
@@ -102,12 +108,17 @@ fun AppNav(container: AppContainer) {
 
     // 홈/추천에서 고른 장소. 지도 탭이 받아서 상세 시트를 열고 비운다.
     var pendingPlaceId by remember { mutableStateOf<Long?>(null) }
+    // 비밀번호 재설정 성공 안내(로그인 화면에 표시)와 가입/로그인 직후 온보딩 필요 여부.
+    var resetSucceeded by remember { mutableStateOf(false) }
+    val onboardingRequired by container.session.onboardingRequired.collectAsState()
 
     // 로그인 상태가 바뀌면(로그인 성공, 로그아웃, AUTH401로 토큰 삭제) 백스택을 비우고 이동한다.
     LaunchedEffect(loggedIn) {
         val route = nav.currentDestination?.route
-        if (loggedIn && (route == Routes.LOGIN || route == Routes.SIGNUP)) nav.resetTo(Routes.HOME)
-        if (!loggedIn && route != null && route != Routes.LOGIN && route != Routes.SIGNUP) nav.resetTo(Routes.LOGIN)
+        val preLogin = route == Routes.LOGIN || route == Routes.SIGNUP ||
+            route == AuthRoutes.SIGNUP_FLOW || route == AuthRoutes.PASSWORD_RESET
+        if (loggedIn && preLogin) nav.resetTo(if (onboardingRequired) AuthRoutes.ONBOARDING else Routes.HOME)
+        if (!loggedIn && route != null && !preLogin) nav.resetTo(Routes.LOGIN)
     }
 
     Scaffold(
@@ -143,7 +154,19 @@ fun AppNav(container: AppContainer) {
         ) {
             composable(Routes.LOGIN) {
                 val vm: LoginViewModel = viewModel(factory = factory { LoginViewModel(container.authRepository) })
-                LoginScreen(vm, onSignup = { nav.navigate(Routes.SIGNUP) })
+                val kakaoVm: KakaoLoginViewModel = viewModel(
+                    factory = factory { KakaoLoginViewModel(container.authExtraRepository, container.kakaoTokenProvider) },
+                )
+                LoginScreen(
+                    vm,
+                    onSignup = { nav.navigate(AuthRoutes.SIGNUP_FLOW) },
+                    extras = {
+                        LoginExtras(kakaoVm, resetSucceeded, onForgotPassword = {
+                            resetSucceeded = false
+                            nav.navigate(AuthRoutes.PASSWORD_RESET)
+                        })
+                    },
+                )
             }
             composable(Routes.SIGNUP) {
                 val vm: SignupViewModel = viewModel(factory = factory { SignupViewModel(container.authRepository) })
@@ -179,6 +202,7 @@ fun AppNav(container: AppContainer) {
                     onOpenRecommend = { lat, lng -> nav.navigate(Routes.recommend(lat, lng)) },
                     pickedPlaceId = pendingPlaceId,
                     onPickedConsumed = { pendingPlaceId = null },
+                    onOpenOnboarding = { nav.navigate(AuthRoutes.ONBOARDING) },
                 )
             }
             composable(Routes.RANKING) {
@@ -204,8 +228,19 @@ fun AppNav(container: AppContainer) {
                     onPointHistory = { nav.navigate(Routes.POINT_HISTORY) },
                     onActivityLog = { nav.navigate(Routes.ACTIVITY_LOG) },
                     onStats = { nav.navigate(Routes.STATS) },
+                    accountSection = {
+                        val accountVm: AccountViewModel = viewModel(
+                            factory = factory { AccountViewModel(container.authExtraRepository, container.userRepository) },
+                        )
+                        AccountSection(accountVm, onOpenOnboarding = { nav.navigate(AuthRoutes.ONBOARDING) })
+                    },
                 )
             }
+            authFlowDestinations(
+                nav, container,
+                goHome = { nav.resetTo(Routes.HOME) },
+                onPasswordResetDone = { resetSucceeded = true },
+            )
             composable(Routes.POINT_HISTORY) {
                 val vm: PointHistoryViewModel = viewModel(
                     factory = factory { PointHistoryViewModel(container.pointRepository) },

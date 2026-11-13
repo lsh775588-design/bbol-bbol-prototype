@@ -53,6 +53,7 @@ fun MeScreen(
     onPointHistory: () -> Unit,
     onActivityLog: () -> Unit,
     onStats: () -> Unit = {},
+    accountSection: @Composable () -> Unit,
 ) {
     val s by vm.state.collectAsState()
     val recent by recentVm.state.collectAsState()
@@ -144,9 +145,7 @@ fun MeScreen(
             MenuRow("퀘스트 통계 (주·월·년 차트)", onStats)
         }
 
-        OutlinedButton(onClick = vm::logout, modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.large) {
-            Text("로그아웃")
-        }
+        accountSection() // 온보딩, 로그아웃, 회원 탈퇴 (ui/auth/AuthScreens.kt)
         Spacer(Modifier.height(4.dp))
     }
 }

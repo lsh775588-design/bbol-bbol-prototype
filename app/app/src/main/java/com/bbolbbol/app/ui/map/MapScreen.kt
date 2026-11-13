@@ -74,6 +74,7 @@ fun MapScreen(
     onOpenRecommend: (lat: Double, lng: Double) -> Unit,
     pickedPlaceId: Long? = null,
     onPickedConsumed: () -> Unit = {},
+    onOpenOnboarding: () -> Unit = {},
 ) {
     val s by vm.state.collectAsState()
     val context = LocalContext.current
@@ -118,7 +119,7 @@ fun MapScreen(
                 Text("내 위치를 찾는 중이에요")
             }
         }
-        else -> MapContent(vm, onOpenRecommend, onRelocate = { launcher.launch(LOCATION_PERMISSIONS) })
+        else -> MapContent(vm, onOpenRecommend, onRelocate = { launcher.launch(LOCATION_PERMISSIONS) }, onOpenOnboarding = onOpenOnboarding)
     }
 }
 
@@ -161,6 +162,7 @@ private fun MapContent(
     vm: MapViewModel,
     onOpenRecommend: (Double, Double) -> Unit,
     onRelocate: () -> Unit,
+    onOpenOnboarding: () -> Unit,
 ) {
     val s by vm.state.collectAsState()
     val context = LocalContext.current
@@ -233,7 +235,12 @@ private fun MapContent(
         }
     }
 
-    s.arrivalOutcome?.let { ArrivalDialog(it, vm::dismissArrivalOutcome) }
+    s.arrivalOutcome?.let {
+        ArrivalDialog(it, vm::dismissArrivalOutcome, onOpenOnboarding = {
+            vm.dismissArrivalOutcome()
+            onOpenOnboarding()
+        })
+    }
 
     if (s.detail != null || s.detailLoading || s.detailError != null) {
         ModalBottomSheet(
@@ -308,12 +315,15 @@ private fun PlaceDetailContent(d: PlaceDetail, blockedReason: String?, arriving:
 }
 
 @Composable
-private fun ArrivalDialog(outcome: ArrivalOutcome, onDismiss: () -> Unit) {
+private fun ArrivalDialog(outcome: ArrivalOutcome, onDismiss: () -> Unit, onOpenOnboarding: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = Color.White,
         shape = BbolShapes.Card,
         confirmButton = { TextButton(onClick = onDismiss) { Text("확인", color = BbolColors.Violet) } },
+        dismissButton = if (outcome is ArrivalOutcome.Error && outcome.code == "COMPLETION4031") {
+            { TextButton(onClick = onOpenOnboarding) { Text("추가 정보 입력하기", color = BbolColors.Violet) } }
+        } else null,
         title = { Text(if (outcome is ArrivalOutcome.Success) "도착 인증 완료" else "도착 인증 실패") },
         text = {
             when (outcome) {

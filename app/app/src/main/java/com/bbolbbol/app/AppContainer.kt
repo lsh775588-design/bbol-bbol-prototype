@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Context
 import com.bbolbbol.app.data.api.ApiJson
 import com.bbolbbol.app.data.api.AuthInterceptor
+import com.bbolbbol.app.data.api.AuthExtraApi
 import com.bbolbbol.app.data.api.BbolApi
 import com.bbolbbol.app.data.api.StatsApi
 import com.bbolbbol.app.data.repository.PhotoRepository
@@ -12,6 +13,10 @@ import com.bbolbbol.app.data.repository.StatsRepository
 import com.bbolbbol.app.ui.photo.AndroidPhotoPrepareService
 import com.bbolbbol.app.ui.photo.PhotoPrepareService
 import com.bbolbbol.app.ui.photo.installPhotoImageLoader
+import com.bbolbbol.app.data.api.ReissueApi
+import com.bbolbbol.app.data.api.TokenRefreshAuthenticator
+import com.bbolbbol.app.data.repository.AuthExtraRepository
+import com.bbolbbol.app.ui.auth.KakaoTokenProviders
 import com.bbolbbol.app.data.local.AuthSession
 import com.bbolbbol.app.data.local.EncryptedTokenStore
 import com.bbolbbol.app.data.repository.AuthRepository
@@ -31,8 +36,18 @@ import java.util.concurrent.TimeUnit
 class AppContainer(context: Context) {
     val session = AuthSession(EncryptedTokenStore(context))
 
+    // 재발급 호출 전용 클라이언트: 인터셉터/Authenticator가 없어서 재발급이 재발급을 부르지 않는다.
+    private val reissueApi: ReissueApi = Retrofit.Builder()
+        .baseUrl(BuildConfig.API_BASE_URL)
+        .client(OkHttpClient.Builder().connectTimeout(10, TimeUnit.SECONDS).readTimeout(15, TimeUnit.SECONDS).build())
+        .addConverterFactory(ApiJson.asConverterFactory("application/json".toMediaType()))
+        .build()
+        .create(ReissueApi::class.java)
+
+    // 사진 이미지 로더(installPhotoImageLoader)가 같은 클라이언트를 써서 인증 헤더와 재발급을 함께 받는다.
     val client = OkHttpClient.Builder()
-        .addInterceptor(AuthInterceptor(session))
+        .addInterceptor(AuthInterceptor(session, clearOnUnauthorized = false))
+        .authenticator(TokenRefreshAuthenticator(session, reissueApi))
         .connectTimeout(10, TimeUnit.SECONDS)
         .readTimeout(15, TimeUnit.SECONDS)
         .build()
@@ -42,10 +57,13 @@ class AppContainer(context: Context) {
         .client(client)
         .addConverterFactory(ApiJson.asConverterFactory("application/json".toMediaType()))
         .build()
+
     private val api: BbolApi = retrofit.create(BbolApi::class.java)
     private val statsApi: StatsApi = retrofit.create(StatsApi::class.java)
 
     val authRepository = AuthRepository(api, session)
+    val authExtraRepository = AuthExtraRepository(retrofit.create(AuthExtraApi::class.java), session)
+    val kakaoTokenProvider = KakaoTokenProviders.create(BuildConfig.DEBUG)
     val userRepository = UserRepository(api)
     val placeRepository = PlaceRepository(api)
     val completionRepository = CompletionRepository(api)

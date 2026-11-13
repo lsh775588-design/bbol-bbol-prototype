@@ -17,7 +17,7 @@ data class FieldError(val field: String = "", val reason: String = "")
 
 /** COMMON400의 data. */
 @Serializable
-data class ValidationErrors(val errors: List<FieldError> = emptyList())
+data class ValidationErrors(val errors: List<FieldError> = emptyList(), val remainingAttempts: Int? = null)
 
 @Serializable
 data class LoginRequest(val email: String, val password: String)

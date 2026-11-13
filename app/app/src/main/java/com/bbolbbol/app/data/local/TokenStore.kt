@@ -16,8 +16,8 @@ interface TokenStore {
 }
 
 class InMemoryTokenStore : TokenStore {
-    override var accessToken: String? = null
-    override var refreshToken: String? = null
+    @Volatile override var accessToken: String? = null
+    @Volatile override var refreshToken: String? = null
     override fun clear() {
         accessToken = null
         refreshToken = null
@@ -65,6 +65,22 @@ class AuthSession(private val store: TokenStore) {
     val loggedIn: StateFlow<Boolean> = _loggedIn.asStateFlow()
 
     val accessToken: String? get() = store.accessToken
+    val refreshToken: String? get() = store.refreshToken
+
+    private val _onboardingRequired = MutableStateFlow(false)
+
+    /** 방금 로그인/가입한 사용자가 온보딩을 마치지 않았는가. 내비게이션이 온보딩 화면으로 보낸다. */
+    val onboardingRequired: StateFlow<Boolean> = _onboardingRequired.asStateFlow()
+
+    /** 카카오 첫 로그인에서 서버가 준 닉네임 제안. 온보딩 화면의 닉네임 칸을 채운다. */
+    @Volatile var suggestedNickname: String? = null
+        private set
+
+    /** saveTokens보다 먼저 부른다(로그인 상태가 바뀌기 전에 갈 곳이 정해져 있어야 한다). */
+    fun markOnboarding(required: Boolean, suggestedNickname: String? = null) {
+        this.suggestedNickname = suggestedNickname
+        _onboardingRequired.value = required
+    }
 
     fun saveTokens(access: String, refresh: String) {
         store.accessToken = access
@@ -75,6 +91,8 @@ class AuthSession(private val store: TokenStore) {
     /** 로그아웃 또는 AUTH401. 재발급 API가 없으므로 토큰을 지우고 로그인으로 보낸다. */
     fun clear() {
         store.clear()
+        _onboardingRequired.value = false
+        suggestedNickname = null
         _loggedIn.value = false
     }
 }
