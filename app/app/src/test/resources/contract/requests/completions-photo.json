@@ -1,0 +1,12 @@
+{
+  "method": "POST",
+  "path": "/completions/{completionId}/photo",
+  "auth": true,
+  "query": {},
+  "requiredQuery": [],
+  "multipart": {
+    "part": "photo",
+    "contentTypes": ["image/jpeg", "image/png"],
+    "maxBytes": 10485760
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "endpoint": "PATCH /users/me/onboarding",
+  "case": "success",
+  "httpStatus": 200,
+  "code": "COMMON200",
+  "shape": {
+    "$": "object",
+    "$.code": "string",
+    "$.data": "object",
+    "$.data.ageGroup": "string",
+    "$.data.gender": "string",
+    "$.data.interests": "array",
+    "$.data.interests[]": "string",
+    "$.data.nickname": "string|null",
+    "$.data.onboardingCompleted": "boolean",
+    "$.message": "string",
+    "$.success": "boolean"
+  }
+}

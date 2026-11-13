@@ -111,19 +111,55 @@ class ContractTest {
 
     // ---- (0) 등록 누락 점검
 
+    /**
+     * 앱 미등록(예정): 서버 골든은 있지만 앱이 아직 DTO와 BbolApi 호출을 만들지 않은 엔드포인트. "엔드포인트 id" -> 사유.
+     * - 여기 있는 id는 등록 누락으로 실패하지 않고 테스트 출력에 목록으로 찍힌다.
+     * - 앱이 DTO를 만들어 responseDtos와 calls에 등록하면 **이 목록에서 그 id를 지워야** 한다(등록과 목록이 겹치면 실패한다).
+     * - 골든에서 사라진 id가 여기 남아 있어도 실패한다(서버가 엔드포인트를 지웠거나 이름을 바꿨다).
+     * - 골든이 있는데 등록도 목록도 아니면 실패한다(새 엔드포인트를 앱이 모르는 채 지나가지 못하게).
+     */
+    private val notYetRegistered: Map<String, String> = mapOf(
+        "auth-email-verifications" to "이메일 인증 코드 발송(앱 화면 없음, app-auth 예정)",
+        "auth-email-verifications-confirm" to "이메일 인증 코드 확인(앱 화면 없음, app-auth 예정)",
+        "auth-password-reset" to "비밀번호 재설정(앱 화면 없음, app-auth 예정)",
+        "auth-reissue" to "토큰 재발급(앱은 재발급 흐름 없이 AUTH401이면 로그아웃, app-auth 예정)",
+        "auth-logout" to "로그아웃(앱은 로컬 토큰만 지운다, app-auth 예정). 주의: AuthInterceptor는 auth/ 경로에 토큰을 안 붙이는데 이 API는 인증이 필요하다",
+        "auth-kakao" to "카카오 로그인(앱 화면 없음, app-auth 예정)",
+        "users-me-delete" to "회원 탈퇴(앱 화면 없음, app-auth 예정)",
+        "users-me-onboarding" to "온보딩 조회(앱 화면 없음, app-auth 예정)",
+        "users-me-onboarding-patch" to "온보딩 저장(앱 화면 없음, app-auth 예정). 서버는 온보딩 전 사용자의 도착 인증을 COMPLETION4031로 막는다",
+        "completions-photo" to "인증 사진 업로드(multipart, 앱 화면 없음)",
+        "users-me-stats" to "기간별 활동 통계(app-stats 예정)",
+        "rankings-users" to "유저 랭킹(app-stats 예정)",
+        "rankings-places" to "장소 랭킹(app-stats 예정)",
+        "rankings-streaks" to "연속 참여 랭킹(app-stats 예정)",
+    )
+
     @Test
     fun everyGoldenEndpointIsRegisteredInTheApp() {
         val problems = mutableListOf<String>()
-        val requestIds = ContractFiles.requests().map { it.id }.toSet()
-        for (id in successGoldens.map { it.id }.toSet()) {
-            if (id !in responseDtos) problems += "응답 골든 '$id'에 대응하는 앱 DTO가 ContractTest.responseDtos에 등록되지 않았다(앱이 아직 이 응답을 모른다)"
+        val goldenIds = (ContractFiles.requests().map { it.id } + ContractFiles.responses().map { it.id })
+            .filter { it != "common" }.toSet()
+        for (id in goldenIds) {
+            val dto = id in responseDtos
+            val call = id in calls
+            val listed = id in notYetRegistered
+            when {
+                dto && call && listed -> problems += "'$id'는 앱에 등록됐으니 ContractTest.notYetRegistered에서 지워라"
+                dto && call -> {}
+                !dto && !call && listed -> {}
+                !dto && !call -> problems += "서버 골든 '$id'를 앱이 모른다: DTO와 BbolApi 호출을 만들어 responseDtos, calls에 등록하거나, 아직이면 notYetRegistered에 사유와 함께 추가"
+                !dto -> problems += "'$id'는 calls에만 등록됐다. 응답 DTO도 responseDtos에 등록하라"
+                else -> problems += "'$id'는 responseDtos에만 등록됐다. BbolApi 호출도 calls에 등록하라"
+            }
         }
-        for (id in requestIds) {
-            if (id !in calls) problems += "요청 골든 '$id'를 보내는 BbolApi 호출이 ContractTest.calls에 등록되지 않았다"
+        for (id in notYetRegistered.keys - goldenIds) problems += "notYetRegistered의 '$id'가 서버 골든에 없다(서버가 지웠거나 이름을 바꿨다). 목록에서 지우거나 이름을 맞춰라"
+        for (id in (responseDtos.keys + calls.keys) - goldenIds) {
+            problems += "등록된 '$id'에 대한 골든이 서버에서 오지 않았다(scripts/sync-contract.mjs 실행 필요?)"
         }
-        for (id in responseDtos.keys + calls.keys) {
-            if (id !in requestIds) problems += "등록된 '$id'에 대한 골든이 서버에서 오지 않았다(scripts/sync-contract.mjs 실행 필요?)"
-        }
+        // 실패하지 않지만 눈에 띄게 남긴다
+        println("[계약] 앱 미등록(예정) 엔드포인트 ${notYetRegistered.size}개: ${notYetRegistered.keys.sorted()}")
+        for ((id, why) in notYetRegistered.toSortedMap()) println("[계약]   $id - $why")
         assertNoProblems("골든과 앱 등록이 어긋남", problems)
     }
 
@@ -202,7 +238,7 @@ class ContractTest {
         }
         for (t in nonNull) {
             val ok = when (t) {
-                "string", "datetime" -> d.kind == PrimitiveKind.STRING || d.kind == SerialKind.ENUM
+                "string", "date", "datetime" -> d.kind == PrimitiveKind.STRING || d.kind == SerialKind.ENUM
                 "integer" -> d.kind in setOf(PrimitiveKind.BYTE, PrimitiveKind.SHORT, PrimitiveKind.INT, PrimitiveKind.LONG)
                 "decimal" -> d.kind in setOf(PrimitiveKind.DOUBLE, PrimitiveKind.FLOAT)
                 "boolean" -> d.kind == PrimitiveKind.BOOLEAN

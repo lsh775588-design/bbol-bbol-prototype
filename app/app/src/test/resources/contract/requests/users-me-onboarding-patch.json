@@ -1,0 +1,13 @@
+{
+  "method": "PATCH",
+  "path": "/users/me/onboarding",
+  "auth": true,
+  "query": {},
+  "requiredQuery": [],
+  "requiredBody": [],
+  "body": {
+    "ageGroup": "TWENTIES",
+    "gender": "FEMALE",
+    "interests": ["CAFE", "HERITAGE"]
+  }
+}

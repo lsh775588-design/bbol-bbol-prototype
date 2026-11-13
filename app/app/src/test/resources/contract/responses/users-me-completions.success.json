@@ -14,7 +14,7 @@
     "$.data.completions[].completedAt": "datetime",
     "$.data.completions[].completionId": "integer",
     "$.data.completions[].earnedPoint": "integer",
-    "$.data.completions[].photoUrl": "null",
+    "$.data.completions[].photoUrl": "string|null",
     "$.data.completions[].placeId": "integer",
     "$.data.completions[].placeName": "string",
     "$.data.hasNext": "boolean",

@@ -106,6 +106,7 @@ object ContractFiles {
             "array:empty" -> JsonArray(emptyList())
             "string" -> JsonPrimitive("s")
             "datetime" -> JsonPrimitive("2026-11-10T12:00:00")
+            "date" -> JsonPrimitive("2026-11-10")
             "integer" -> JsonPrimitive(1)
             "decimal" -> JsonPrimitive(1.5)
             "boolean" -> JsonPrimitive(true)

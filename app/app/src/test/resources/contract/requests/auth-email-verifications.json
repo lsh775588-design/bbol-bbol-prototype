@@ -1,0 +1,11 @@
+{
+  "method": "POST",
+  "path": "/auth/email-verifications",
+  "auth": false,
+  "query": {},
+  "requiredQuery": [],
+  "body": {
+    "email": "contract-ev@example.com",
+    "purpose": "SIGNUP"
+  }
+}

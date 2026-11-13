@@ -29,6 +29,19 @@ cd app && ./gradlew testDebugUnitTest
 4. 바깥 저장소에서 `sync-contract` 실행 후 앱 `ContractTest`의 `responseDtos`(응답 DTO)와 `calls`(BbolApi 호출)에 `<id>`를 등록한다. 등록하지 않으면 테스트가 "등록되지 않았다"로 실패한다.
 5. 앱 테스트가 알려 주는 대로 DTO를 맞춘다. 서버 키를 일부러 안 쓰면 `intentionallyIgnored`, 서버 null을 기본값으로 받아도 되면 `coercedNulls`에 **이유와 함께** 등록한다(안 쓰게 되면 테스트가 지우라고 알려 준다).
 
+## 앱 미등록(예정) 목록 (앱 담당 에이전트가 할 일)
+서버가 먼저 골든을 만들면 앱이 아직 모르는 엔드포인트가 생긴다. 앱 `ContractTest.notYetRegistered`(id -> 사유)가 그 목록이고, 목록에 있는 id는 실패하지 않고 테스트 출력에 `[계약] 앱 미등록(예정)`으로 찍힌다. 규칙은 네 가지다.
+- 골든이 있는데 `responseDtos`/`calls`에도 `notYetRegistered`에도 없으면 실패한다(새 엔드포인트를 앱이 모르는 채 지나갈 수 없다).
+- 목록의 id가 골든에서 사라지면 실패한다(서버가 지웠거나 이름을 바꿈).
+- **앱이 DTO와 BbolApi 호출을 만들면**: (1) `scripts/sync-contract.mjs`로 골든을 받고 (2) `responseDtos`에 응답 DTO, `calls`에 실제 호출(선택 인자는 모두 채움)을 등록하고 (3) **`notYetRegistered`에서 그 id를 지운다.** 등록과 목록이 겹치면 실패하므로 지우는 것을 잊을 수 없다.
+- 그다음은 일반 절차와 같다: 테스트가 알려 주는 키, 타입, null 불일치를 DTO에 맞춘다.
+
+## 서버 골든 규칙 추가분
+- 요청 골든의 `requiredBody`: 빠지면 COMMON400이어야 하는 본문 키. 없으면 본문 키 전부, PATCH처럼 전부 선택이면 `[]`(예: 온보딩 저장).
+- `multipart`: JSON 본문이 없는 업로드(`completions-photo`)는 파트 이름, 허용 content-type, 최대 크기로 계약을 적는다. 서버 테스트가 파트 누락, 다른 파트 이름, 비이미지, 허용 밖 타입(gif), 10MB 초과를 에러 골든(FILE4001, FILE413)으로 만든다. 앱은 아직 이 호출이 없다.
+- 서버 테스트는 둘로 나뉜다: `ContractGoldenTest`(조회, 도착 인증, 사진, 통계, 랭킹, 온보딩)와 `ContractAuthFlowTest`(이메일 인증, 비밀번호 재설정, 재발급, 로그아웃, 카카오, 탈퇴: 상태를 바꾸는 흐름이라 `AuthFlowTest` 틀을 쓴다). 담당 id는 `ContractSupport.authFlowIds`.
+- 도착 인증은 온보딩을 마친 사용자만 된다(COMPLETION4031). 계약 테스트의 사용자는 `PATCH /users/me/onboarding`으로 온보딩을 마친다. 새 도착 인증 표본을 만들 때도 같다.
+
 ## 알아 둘 한계
 - 값은 비교하지 않는다. 문구(message), enum 값 목록(`hotType`, `type`, `loginType`), 정수 폭(Int/Long), 시각의 시간대 의미는 계약에 넣지 않았다. 시각은 문자열 모양(`yyyy-MM-ddTHH:mm:ss`, 시간대 없음)만 본다.
 - 표본에 한 번도 나오지 않은 변형(예: 항상 null인 `photoUrl`)은 타입을 알 수 없어 `null`로만 기록된다. 값이 생기면 골든이 바뀌어 테스트가 알려 준다.

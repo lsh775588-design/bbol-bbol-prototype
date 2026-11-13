@@ -1,0 +1,13 @@
+{
+  "endpoint": "POST /auth/kakao",
+  "case": "error-KAKAO502",
+  "httpStatus": 502,
+  "code": "KAKAO502",
+  "shape": {
+    "$": "object",
+    "$.code": "string",
+    "$.data": "null",
+    "$.message": "string",
+    "$.success": "boolean"
+  }
+}
