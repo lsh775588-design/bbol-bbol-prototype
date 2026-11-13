@@ -19,6 +19,7 @@ import org.springframework.test.web.servlet.MockMvc;
 class LocalFixedUserFilterTest {
 
     @Nested
+    @org.springframework.context.annotation.Import(com.bbolbbol.support.AllUsersActiveConfig.class)
     @SpringBootTest(properties = "bbolbbol.local.fixed-user-id=77")
     @AutoConfigureMockMvc
     @ActiveProfiles("local")

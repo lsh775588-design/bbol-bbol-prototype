@@ -31,3 +31,6 @@ bbolbbol:
   local:
     # DEV ONLY: 토큰이 없으면 이 userId로 인증한다(LocalFixedUserFilter). 비우면 비활성.
     fixed-user-id: 1
+    # DEV ONLY: local 프로파일 전용 가짜 이메일 인증 토큰(LocalVerificationTokenVerifier).
+    # signup의 verificationToken에 "<이 값>:<가입할 이메일>" 형태로 넣는다. 다른 프로파일에는 이 값이 없다.
+    verification-token: DEV-ONLY-FAKE-verification-token

@@ -14,6 +14,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 // 최소 스모크 테스트. 전체 보안 테스트는 0-5에서 확장한다.
+@org.springframework.context.annotation.Import(com.bbolbbol.support.AllUsersActiveConfig.class)
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
