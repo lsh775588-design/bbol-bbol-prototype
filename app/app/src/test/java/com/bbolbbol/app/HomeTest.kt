@@ -148,14 +148,32 @@ class HomeTest {
     }
 
     @Test
-    fun startRunsOnlyOnce() {
+    fun secondStartRefreshesSilentlyWithoutBlankingSections() {
         routeAllOk()
         val vm = vm()
         vm.start(37.5, 127.0)
         waitUntil { vm.loaded() }
+        val before = fx.server.requestCount
+        fx.route("/users/me", 200, Json.ok(ME.replace("뽈뽈이", "새닉네임")))
+        vm.start(37.5, 127.0)
+        // 다시 들어와도 로딩 표시로 비우지 않고, 새 값이 들어온다.
+        assertFalse(vm.state.value.nickname.loading)
+        waitUntil { vm.state.value.nickname.data == "새닉네임" }
+        waitUntil { fx.server.requestCount >= before + 4 }
+        assertEquals(120L, vm.state.value.points.data!!.totalPoint)
+    }
+
+    @Test
+    fun silentRefreshKeepsOldValuesWhenRequestFails() {
+        routeAllOk()
+        val vm = vm()
         vm.start(null, null)
-        assertFalse(vm.state.value.browse)
-        assertEquals(37.5, vm.state.value.lat, 0.0)
+        waitUntil { vm.loaded() }
+        fx.route("/users/me/points", 500, Json.error("COMMON500"))
+        vm.start(null, null)
+        Thread.sleep(300)
+        assertEquals(120L, vm.state.value.points.data!!.totalPoint)
+        assertNull(vm.state.value.points.error)
     }
 
     @Test

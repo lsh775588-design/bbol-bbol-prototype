@@ -85,7 +85,7 @@ private fun EmailCodeSteps(c: CodeStepState, controller: EmailCodeController, se
             )
         }
         c.error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
-        PrimaryButton(sendLabel, onClick = controller::send, enabled = !c.sending, loading = c.sending)
+        PrimaryButton(sendLabel, onClick = controller::send, enabled = c.canSend, loading = c.sending)
         return
     }
     Text(
@@ -108,10 +108,6 @@ private fun EmailCodeSteps(c: CodeStepState, controller: EmailCodeController, se
         enabled = !c.codeInvalid,
         shape = MaterialTheme.shapes.medium,
         isError = c.error != null,
-        supportingText = {
-            val attempts = c.remainingAttempts
-            if (attempts != null) Text("남은 시도 ${attempts}번")
-        },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
         modifier = Modifier.fillMaxWidth(),
     )
@@ -216,9 +212,19 @@ fun PasswordResetScreen(vm: PasswordResetViewModel, devTools: DevTools, onBack: 
 
 /** 로그인 화면 아래에 끼우는 부분: 비밀번호 찾기, 카카오 로그인, 재설정 성공 안내. */
 @Composable
-fun LoginExtras(vm: KakaoLoginViewModel, devTools: DevTools, resetSucceeded: Boolean, onForgotPassword: () -> Unit) {
+fun LoginExtras(
+    vm: KakaoLoginViewModel,
+    devTools: DevTools,
+    resetSucceeded: Boolean,
+    session: com.bbolbbol.app.data.local.AuthSession,
+    onForgotPassword: () -> Unit,
+) {
     val s by vm.state.collectAsState()
+    val expired by session.sessionExpired.collectAsState()
     Column(horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        if (expired) {
+            Text("로그인 시간이 만료되어 다시 로그인해 주세요.", color = BbolColors.InkSoft, style = MaterialTheme.typography.bodySmall)
+        }
         if (resetSucceeded) {
             Text("비밀번호를 변경했어요. 새 비밀번호로 로그인해 주세요.", color = BbolColors.Success, style = MaterialTheme.typography.bodySmall)
         }
@@ -240,19 +246,30 @@ fun LoginExtras(vm: KakaoLoginViewModel, devTools: DevTools, resetSucceeded: Boo
 @Composable
 fun AccountSection(vm: AccountViewModel, onOpenOnboarding: () -> Unit) {
     val s by vm.state.collectAsState()
+    var showLogoutDialog by remember { mutableStateOf(false) }
     // 온보딩 화면에서 돌아오면 다시 읽는다.
     LaunchedEffect(Unit) { vm.refreshOnboarding() }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         OutlinedButton(onClick = onOpenOnboarding, modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.large) {
             Text(if (s.onboardingCompleted == false) "추가 정보 입력하기 (도착 인증에 필요해요)" else "추가 정보 수정")
         }
-        OutlinedButton(onClick = vm::logout, enabled = !s.busy, modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.large) {
+        OutlinedButton(onClick = { showLogoutDialog = true }, enabled = !s.busy, modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.large) {
             Text("로그아웃")
         }
         TextButton(onClick = vm::askWithdraw, enabled = !s.busy, modifier = Modifier.fillMaxWidth()) {
             Text("회원 탈퇴", color = MaterialTheme.colorScheme.error)
         }
         s.error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+    }
+    if (showLogoutDialog) {
+        AlertDialog(
+            onDismissRequest = { showLogoutDialog = false },
+            containerColor = Color.White,
+            shape = BbolShapes.Card,
+            title = { Text("로그아웃할까요?") },
+            confirmButton = { TextButton(onClick = { showLogoutDialog = false; vm.logout() }) { Text("로그아웃") } },
+            dismissButton = { TextButton(onClick = { showLogoutDialog = false }) { Text("취소") } },
+        )
     }
     if (s.showWithdrawDialog) {
         AlertDialog(

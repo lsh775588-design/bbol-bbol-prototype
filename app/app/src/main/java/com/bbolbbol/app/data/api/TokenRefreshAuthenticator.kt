@@ -33,7 +33,7 @@ class TokenRefreshAuthenticator(
         if (!isAccessTokenInvalid(response)) return null
         if (response.priorResponse != null) {
             // 새 토큰으로 다시 보냈는데도 401. 세션이 망가졌으니 지우고 끝낸다.
-            session.clear()
+            session.expire()
             return null
         }
         lock.withLock {
@@ -42,7 +42,7 @@ class TokenRefreshAuthenticator(
             if (current != sentToken) return retryWith(response.request, current) // 다른 요청이 이미 재발급했다.
             val refresh = session.refreshToken
             if (refresh.isNullOrEmpty()) {
-                session.clear()
+                session.expire()
                 return null
             }
             when (val outcome = reissue(refresh)) {
@@ -52,7 +52,7 @@ class TokenRefreshAuthenticator(
                 }
                 // 서버가 refresh를 거절했다(AUTH4012 등). 다시 로그인해야 한다.
                 Outcome.Rejected -> {
-                    session.clear()
+                    session.expire()
                     return null
                 }
                 // 네트워크 오류, 타임아웃, 5xx: 토큰은 그대로 두고 이 요청만 실패시킨다(오프라인에서 로그아웃되지 않게).

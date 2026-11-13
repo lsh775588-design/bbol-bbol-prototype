@@ -32,6 +32,8 @@ data class CodeStepState(
     /** 인증 성공 후 받은 토큰. 값을 로그나 화면에 내지 않는다. */
     val verificationToken: String? = null,
 ) {
+    /** 이메일이 비어 있으면 코드를 받을 수 없다. */
+    val canSend get() = email.isNotBlank() && !sending
     val verified get() = verificationToken != null
     val canResend get() = sent && resendIn <= 0 && !sending && !verified
     val canConfirm get() = sent && code.length == CODE_LENGTH && !confirming && !codeInvalid && !verified

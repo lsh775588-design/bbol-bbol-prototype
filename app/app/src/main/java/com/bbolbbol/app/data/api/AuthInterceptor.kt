@@ -27,7 +27,7 @@ class AuthInterceptor(
         val response = chain.proceed(request)
         if (clearOnUnauthorized && !isPublic && response.code == 401 && !token.isNullOrEmpty()) {
             val body = response.peekBody(MAX_PEEK).string()
-            if (parseFailure(401, body).code == "AUTH401") session.clear()
+            if (parseFailure(401, body).code == "AUTH401") session.expire()
         }
         return response
     }

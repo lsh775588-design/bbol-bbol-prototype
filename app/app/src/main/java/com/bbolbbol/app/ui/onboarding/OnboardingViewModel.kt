@@ -38,7 +38,12 @@ data class OnboardingUiState(
     val formError: String? = null,
     val saving: Boolean = false,
     val done: Boolean = false,
-)
+) {
+    /** 필수 입력(닉네임, 연령대, 성별)이 채워졌고 저장 중이 아니다. */
+    val canSubmit get() = !loading && !saving &&
+        (!showNickname || nickname.isNotBlank()) &&
+        (alreadyCompleted || (ageGroup != null && gender != null))
+}
 
 class OnboardingViewModel(
     private val extra: AuthExtraRepository,

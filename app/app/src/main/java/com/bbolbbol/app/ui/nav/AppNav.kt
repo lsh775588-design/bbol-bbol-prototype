@@ -108,14 +108,15 @@ fun AppNav(container: AppContainer) {
     var pendingPlaceId by remember { mutableStateOf<Long?>(null) }
     // 비밀번호 재설정 성공 안내(로그인 화면에 표시)와 가입/로그인 직후 온보딩 필요 여부.
     var resetSucceeded by remember { mutableStateOf(false) }
-    val onboardingRequired by container.session.onboardingRequired.collectAsState()
 
     // 로그인 상태가 바뀌면(로그인 성공, 로그아웃, AUTH401로 토큰 삭제) 백스택을 비우고 이동한다.
     LaunchedEffect(loggedIn) {
         val route = nav.currentDestination?.route
         val preLogin = route == Routes.LOGIN ||
             route == AuthRoutes.SIGNUP_FLOW || route == AuthRoutes.PASSWORD_RESET
-        if (loggedIn && preLogin) nav.resetTo(if (onboardingRequired) AuthRoutes.ONBOARDING else Routes.HOME)
+        // collectAsState로 읽은 값은 markOnboarding 직후 아직 갱신 전일 수 있다. 흐름의 현재 값을 직접 읽는다.
+        if (loggedIn) resetSucceeded = false
+        if (loggedIn && preLogin) nav.resetTo(postLoginRoute(container.session))
         if (!loggedIn && route != null && !preLogin) nav.resetTo(Routes.LOGIN)
     }
 
@@ -164,7 +165,7 @@ fun AppNav(container: AppContainer) {
                     vm,
                     onSignup = { nav.navigate(AuthRoutes.SIGNUP_FLOW) },
                     extras = {
-                        LoginExtras(kakaoVm, container.devTools, resetSucceeded, onForgotPassword = {
+                        LoginExtras(kakaoVm, container.devTools, resetSucceeded, container.session, onForgotPassword = {
                             resetSucceeded = false
                             nav.navigate(AuthRoutes.PASSWORD_RESET)
                         })
@@ -277,6 +278,10 @@ fun AppNav(container: AppContainer) {
         }
     }
 }
+
+/** 로그인/가입 직후 갈 곳. 상태 흐름의 현재 값을 직접 읽는다. */
+internal fun postLoginRoute(session: com.bbolbbol.app.data.local.AuthSession): String =
+    if (session.onboardingRequired.value) AuthRoutes.ONBOARDING else Routes.HOME
 
 private fun NavHostController.switchTab(route: String) {
     navigate(route) {

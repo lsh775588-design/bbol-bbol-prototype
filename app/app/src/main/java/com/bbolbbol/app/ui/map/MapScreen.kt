@@ -170,7 +170,7 @@ private fun MapContent(
         OsmMap(
             lat = s.focusLat ?: s.lat,
             lng = s.focusLng ?: s.lng,
-            zoom = if (s.isBrowse && s.focusLat == null) 14.0 else 16.0,
+            zoom = if (s.isBrowse && s.focusLat == null) BROWSE_ZOOM else 16.0,
             places = s.places.map { MarkerData(it.placeId, it.name, it.lat, it.lng, it.isHot) }.let { list ->
                 // 추천에서 고른 장소가 현재 검색 반경 밖이어도 마커를 보여준다.
                 val d = s.detail
@@ -307,7 +307,12 @@ private fun PlaceDetailContent(d: PlaceDetail, blockedReason: String?, arriving:
         color = BbolColors.InkSoft,
     )
     Spacer(Modifier.height(16.dp))
-    PrimaryButton("도착 인증하기", onClick = onArrive, enabled = blockedReason == null && !arriving, loading = arriving)
+    PrimaryButton(
+        if (d.isCompleted) "오늘 완료" else "도착 인증하기",
+        onClick = onArrive,
+        enabled = blockedReason == null && !arriving && !d.isCompleted,
+        loading = arriving,
+    )
     if (blockedReason != null) {
         Spacer(Modifier.height(8.dp))
         Text(blockedReason, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.secondary)

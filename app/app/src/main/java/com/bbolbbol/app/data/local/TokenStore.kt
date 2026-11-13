@@ -144,10 +144,23 @@ class AuthSession(private val store: TokenStore) {
         _onboardingRequired.value = required
     }
 
+    private val _sessionExpired = MutableStateFlow(false)
+
+    /** 세션 만료(재발급 실패, AUTH401)로 로그인 화면에 돌아왔는가. 로그인 화면이 안내 문구를 보여준다. */
+    val sessionExpired: StateFlow<Boolean> = _sessionExpired.asStateFlow()
+
     fun saveTokens(access: String, refresh: String) {
         store.accessToken = access
         store.refreshToken = refresh
+        _sessionExpired.value = false
         _loggedIn.value = true
+    }
+
+    /** 서버가 세션을 거절해서(재발급 실패, AUTH401) 로그아웃된 경우. 로그인 화면에 이유를 알린다. */
+    fun expire() {
+        val wasLoggedIn = _loggedIn.value
+        clear()
+        if (wasLoggedIn) _sessionExpired.value = true
     }
 
     /** 로그아웃 또는 AUTH401. 재발급 API가 없으므로 토큰을 지우고 로그인으로 보낸다. */
@@ -155,6 +168,7 @@ class AuthSession(private val store: TokenStore) {
         store.clear()
         _onboardingRequired.value = false
         suggestedNickname = null
+        _sessionExpired.value = false
         _loggedIn.value = false
     }
 }
