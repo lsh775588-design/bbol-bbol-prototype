@@ -36,6 +36,13 @@ cd app && ./gradlew testDebugUnitTest
 - **앱이 DTO와 BbolApi 호출을 만들면**: (1) `scripts/sync-contract.mjs`로 골든을 받고 (2) `responseDtos`에 응답 DTO, `calls`에 실제 호출(선택 인자는 모두 채움)을 등록하고 (3) **`notYetRegistered`에서 그 id를 지운다.** 등록과 목록이 겹치면 실패하므로 지우는 것을 잊을 수 없다.
 - 그다음은 일반 절차와 같다: 테스트가 알려 주는 키, 타입, null 불일치를 DTO에 맞춘다.
 
+### 현재 상태와 등록 방법 보충
+- `notYetRegistered`는 지금 **비어 있다**(서버 골든 전부를 앱이 등록). 새 서버 엔드포인트가 생길 때만 다시 채운다.
+- 앱 호출은 `calls`에서 `Apis`(BbolApi, AuthExtraApi, StatsApi, ReissueApi)를 통해 부른다. 새 Retrofit 인터페이스를 만들면 `Apis`에 한 줄 추가한다.
+- 성공해도 `data`가 null인 응답(로그아웃, 탈퇴, 비밀번호 재설정)은 DTO가 없으므로 `responseDtos`가 아니라 `noDataResponses`에 id를 넣고, 필요하면 `noDataSuccessResponsesAreHandledByApp`의 호출 목록에 추가한다(앱의 `apiCallNoData`로 성공 처리되는지 확인).
+- multipart 업로드는 `calls`에서 실제 `MultipartBody.Part`를 만들어 부른다. 테스트가 파트 이름과 content-type을 요청 골든의 `multipart`와 비교한다.
+- enum 값(`purpose`, `ageGroup`, `gender`)은 서버 골든에 목록이 없어서 앱 테스트(`appEnumWireValuesEqualServerPatterns`)에 서버 DTO의 `@Pattern` 값을 적어 두고 비교한다. 서버 값이 바뀌면 이 테스트도 같이 고친다.
+
 ## 서버 골든 규칙 추가분
 - 요청 골든의 `requiredBody`: 빠지면 COMMON400이어야 하는 본문 키. 없으면 본문 키 전부, PATCH처럼 전부 선택이면 `[]`(예: 온보딩 저장).
 - `multipart`: JSON 본문이 없는 업로드(`completions-photo`)는 파트 이름, 허용 content-type, 최대 크기로 계약을 적는다. 서버 테스트가 파트 누락, 다른 파트 이름, 비이미지, 허용 밖 타입(gif), 10MB 초과를 에러 골든(FILE4001, FILE413)으로 만든다. 앱은 아직 이 호출이 없다.
