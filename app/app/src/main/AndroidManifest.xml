@@ -9,6 +9,8 @@
     <application
         android:name=".BbolApplication"
         android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
         android:label="뽈뽈"
         android:supportsRtl="true"
         android:theme="@style/Theme.BbolBbol">
