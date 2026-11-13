@@ -52,6 +52,7 @@ fun MeScreen(
     recentVm: RecentActivityViewModel,
     onPointHistory: () -> Unit,
     onActivityLog: () -> Unit,
+    onStats: () -> Unit = {},
 ) {
     val s by vm.state.collectAsState()
     val recent by recentVm.state.collectAsState()
@@ -139,7 +140,9 @@ fun MeScreen(
             }
         }
 
-        ComingSoonCard("퀘스트 통계", "주간 활동 차트는 데이터가 준비되면 보여드릴게요.")
+        BbolCard {
+            MenuRow("퀘스트 통계 (주·월·년 차트)", onStats)
+        }
 
         OutlinedButton(onClick = vm::logout, modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.large) {
             Text("로그아웃")
