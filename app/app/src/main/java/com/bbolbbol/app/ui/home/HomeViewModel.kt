@@ -46,11 +46,41 @@ class HomeViewModel(
 
     private var started = false
 
-    /** 화면이 처음 뜰 때 한 번 호출한다. 위치를 못 얻었으면 둘러보기(종로구 중심)로 부른다. */
+    /**
+     * 화면이 (다시) 보일 때마다 호출한다. 처음에는 전체를 불러오고, 탭에 다시 들어올 때는 화면을 비우지 않고
+     * 조용히 갱신한다(도착 인증 포인트, 온보딩에서 정한 닉네임 반영). 위치를 못 얻었으면 둘러보기(종로구 중심).
+     */
     fun start(lat: Double?, lng: Double?) {
-        if (started) return
-        started = true
-        load(lat, lng)
+        if (!started) {
+            started = true
+            load(lat, lng)
+        } else {
+            refresh(lat, lng)
+        }
+    }
+
+    /** 로딩 표시 없이 모든 구역을 다시 읽는다. 실패하면 이전 값을 그대로 둔다. */
+    fun refresh(lat: Double? = null, lng: Double? = null) {
+        val browse = lat == null || lng == null
+        val useLat = lat ?: DEFAULT_LAT
+        val useLng = lng ?: DEFAULT_LNG
+        _state.update { it.copy(browse = browse, lat = useLat, lng = useLng) }
+        viewModelScope.launch {
+            val me = users.me()
+            if (me is ApiResult.Success) _state.update { it.copy(nickname = Section(false, me.data.nickname)) }
+        }
+        viewModelScope.launch {
+            val r = pointRepo.summary()
+            if (r is ApiResult.Success) _state.update { it.copy(points = Section(false, r.data)) }
+        }
+        viewModelScope.launch {
+            val r = places.recommendations(useLat, useLng)
+            if (r is ApiResult.Success) _state.update { it.copy(recommendations = Section(false, r.data)) }
+        }
+        viewModelScope.launch {
+            val r = completions.log(null, RECENT_COUNT)
+            if (r is ApiResult.Success) _state.update { it.copy(recent = Section(false, r.data.completions.take(RECENT_COUNT))) }
+        }
     }
 
     /** 당겨서 새로고침/다시 시도. lat/lng가 null이면 종로구 중심. */

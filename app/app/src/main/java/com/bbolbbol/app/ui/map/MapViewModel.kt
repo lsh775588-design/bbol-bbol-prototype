@@ -41,6 +41,9 @@ data class MapUiState(
 ) {
     val isBrowse get() = mode == LocationMode.BROWSE
 
+    /** 지금 열린 장소를 오늘 이미 인증했는가(상세 응답에 이미 들어 있는 값). */
+    val detailCompletedToday get() = detail?.isCompleted == true
+
     /** 도착 인증을 막는 이유. 인증할 수 있으면 null. */
     fun arrivalBlockedReason(hasLocationPermission: Boolean): String? = when {
         isBrowse -> "둘러보기 모드에서는 도착 인증을 할 수 없어요."
@@ -56,6 +59,9 @@ sealed interface ArrivalOutcome {
     data class Success(val result: CompletionResponse) : ArrivalOutcome
     data class Error(val message: String, val code: String? = null) : ArrivalOutcome
 }
+
+/** 둘러보기 모드의 초기 줌(종로구 중심 한 동네 크기). */
+const val BROWSE_ZOOM = 15.0
 
 const val JONGNO_LAT = 37.5729
 const val JONGNO_LNG = 126.9794

@@ -103,7 +103,7 @@ fun OnboardingScreen(vm: OnboardingViewModel, onDone: () -> Unit, onSkip: () -> 
                     }
                 }
                 s.formError?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
-                PrimaryButton("저장하기", onClick = vm::submit, enabled = !s.saving, loading = s.saving)
+                PrimaryButton("저장하기", onClick = vm::submit, enabled = s.canSubmit, loading = s.saving)
                 TextButton(onClick = onSkip, modifier = Modifier.fillMaxWidth()) {
                     Text("나중에 하기 (도착 인증 전에 꼭 필요해요)", color = BbolColors.InkSoft)
                 }
