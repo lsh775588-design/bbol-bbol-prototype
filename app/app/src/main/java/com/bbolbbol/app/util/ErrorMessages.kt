@@ -11,6 +11,16 @@ object ErrorMessages {
     private val byCode = mapOf(
         "AUTH401" to "로그인이 만료되었어요. 다시 로그인해 주세요.",
         "AUTH4011" to "이메일 또는 비밀번호가 일치하지 않아요.",
+        "AUTH4012" to "로그인이 만료되었어요. 다시 로그인해 주세요.",
+        "AUTH429" to "로그인 시도가 너무 많아요. 잠시 후 다시 시도해 주세요.",
+        "EMAIL4001" to "인증 코드가 일치하지 않아요.",
+        "EMAIL4002" to "인증 코드가 만료되었거나 5번 틀려서 사용할 수 없어요. 코드를 다시 받아 주세요.",
+        "EMAIL429" to "인증 코드는 1분에 한 번, 하루 5번까지만 보낼 수 있어요. 잠시 후 다시 시도해 주세요.",
+        "EMAIL502" to "인증 메일을 보내지 못했어요. 잠시 후 다시 시도해 주세요.",
+        "KAKAO401" to "카카오 로그인이 만료되었거나 올바르지 않아요. 다시 시도해 주세요.",
+        "KAKAO502" to "카카오 서버에서 응답이 없어요. 잠시 후 다시 시도해 주세요.",
+        "USER4093" to "이 카카오 계정의 이메일은 이미 이메일로 가입되어 있어요. 이메일로 로그인해 주세요.",
+        "COMPLETION4031" to "도착 인증을 하려면 먼저 추가 정보(온보딩)를 입력해야 해요.",
         "USER404" to "존재하지 않거나 탈퇴한 계정이에요.",
         "USER409" to "이미 가입된 이메일이에요.",
         "USER4001" to "사용할 수 없는 단어가 닉네임에 포함되어 있어요.",
@@ -37,6 +47,8 @@ object ErrorMessages {
             val first = result.fieldErrors.firstOrNull()?.reason
             if (result.code == "COMMON400" && !first.isNullOrBlank()) {
                 first
+            } else if (result.code == "EMAIL4001" && result.remainingAttempts != null) {
+                "${byCode["EMAIL4001"]} 남은 시도 ${result.remainingAttempts}번"
             } else {
                 byCode[result.code] ?: if (result.httpStatus >= 500) SERVER else UNKNOWN
             }

@@ -35,7 +35,7 @@ import com.bbolbbol.app.ui.common.PrimaryButton
 import com.bbolbbol.app.ui.theme.BbolColors
 
 @Composable
-fun LoginScreen(vm: LoginViewModel, onSignup: () -> Unit) {
+fun LoginScreen(vm: LoginViewModel, onSignup: () -> Unit, extras: @Composable () -> Unit = {}) {
     val s by vm.state.collectAsState()
     Column(
         modifier = Modifier
@@ -85,5 +85,6 @@ fun LoginScreen(vm: LoginViewModel, onSignup: () -> Unit) {
             }
         }
         TextButton(onClick = onSignup) { Text("회원가입", color = BbolColors.Violet) }
+        extras()
     }
 }

@@ -4,7 +4,12 @@ import android.app.Application
 import android.content.Context
 import com.bbolbbol.app.data.api.ApiJson
 import com.bbolbbol.app.data.api.AuthInterceptor
+import com.bbolbbol.app.data.api.AuthExtraApi
 import com.bbolbbol.app.data.api.BbolApi
+import com.bbolbbol.app.data.api.ReissueApi
+import com.bbolbbol.app.data.api.TokenRefreshAuthenticator
+import com.bbolbbol.app.data.repository.AuthExtraRepository
+import com.bbolbbol.app.ui.auth.KakaoTokenProviders
 import com.bbolbbol.app.data.local.AuthSession
 import com.bbolbbol.app.data.local.EncryptedTokenStore
 import com.bbolbbol.app.data.repository.AuthRepository
@@ -24,20 +29,32 @@ import java.util.concurrent.TimeUnit
 class AppContainer(context: Context) {
     val session = AuthSession(EncryptedTokenStore(context))
 
+    // 재발급 호출 전용 클라이언트: 인터셉터/Authenticator가 없어서 재발급이 재발급을 부르지 않는다.
+    private val reissueApi: ReissueApi = Retrofit.Builder()
+        .baseUrl(BuildConfig.API_BASE_URL)
+        .client(OkHttpClient.Builder().connectTimeout(10, TimeUnit.SECONDS).readTimeout(15, TimeUnit.SECONDS).build())
+        .addConverterFactory(ApiJson.asConverterFactory("application/json".toMediaType()))
+        .build()
+        .create(ReissueApi::class.java)
+
     private val client = OkHttpClient.Builder()
-        .addInterceptor(AuthInterceptor(session))
+        .addInterceptor(AuthInterceptor(session, clearOnUnauthorized = false))
+        .authenticator(TokenRefreshAuthenticator(session, reissueApi))
         .connectTimeout(10, TimeUnit.SECONDS)
         .readTimeout(15, TimeUnit.SECONDS)
         .build()
 
-    private val api: BbolApi = Retrofit.Builder()
+    private val retrofit: Retrofit = Retrofit.Builder()
         .baseUrl(BuildConfig.API_BASE_URL)
         .client(client)
         .addConverterFactory(ApiJson.asConverterFactory("application/json".toMediaType()))
         .build()
-        .create(BbolApi::class.java)
+
+    private val api: BbolApi = retrofit.create(BbolApi::class.java)
 
     val authRepository = AuthRepository(api, session)
+    val authExtraRepository = AuthExtraRepository(retrofit.create(AuthExtraApi::class.java), session)
+    val kakaoTokenProvider = KakaoTokenProviders.create(BuildConfig.DEBUG)
     val userRepository = UserRepository(api)
     val placeRepository = PlaceRepository(api)
     val completionRepository = CompletionRepository(api)

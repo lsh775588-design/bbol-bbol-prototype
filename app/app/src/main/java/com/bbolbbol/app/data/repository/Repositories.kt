@@ -40,7 +40,10 @@ class AuthRepository(private val api: BbolApi, private val session: AuthSession)
     fun logout() = session.clear()
 
     private fun storeTokens(result: ApiResult<TokenResponse>) {
-        if (result is ApiResult.Success) session.saveTokens(result.data.accessToken, result.data.refreshToken)
+        if (result is ApiResult.Success) {
+            session.markOnboarding(result.data.isNewUser)
+            session.saveTokens(result.data.accessToken, result.data.refreshToken)
+        }
     }
 }
 

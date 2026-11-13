@@ -14,6 +14,8 @@ sealed interface ApiResult<out T> {
         val code: String,
         val serverMessage: String?,
         val fieldErrors: List<FieldError> = emptyList(),
+        /** EMAIL4001의 data.remainingAttempts. */
+        val remainingAttempts: Int? = null,
     ) : ApiResult<Nothing>
 
     /** 연결 실패/타임아웃 등. */
@@ -50,7 +52,7 @@ fun parseFailure(httpStatus: Int, raw: String?): ApiResult.Failure {
     if (raw.isNullOrBlank()) return ApiResult.Failure(httpStatus, "", null)
     return try {
         val env = ApiJson.decodeFromString<ApiEnvelope<ValidationErrors>>(raw)
-        ApiResult.Failure(httpStatus, env.code, env.message, env.data?.errors.orEmpty())
+        ApiResult.Failure(httpStatus, env.code, env.message, env.data?.errors.orEmpty(), env.data?.remainingAttempts)
     } catch (e: Exception) {
         // data가 errors 형태가 아닐 수 있다(USER4002의 nextChangeableAt 등). code만 다시 읽는다.
         try {
