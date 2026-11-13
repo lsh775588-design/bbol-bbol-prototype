@@ -1,5 +1,6 @@
 package com.bbolbbol.app.ui.signup
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -10,8 +11,6 @@ import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -28,6 +27,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.bbolbbol.app.BuildConfig
+import com.bbolbbol.app.ui.common.PrimaryButton
+import com.bbolbbol.app.ui.theme.BbolColors
 
 @Composable
 fun SignupScreen(vm: SignupViewModel, onBack: () -> Unit) {
@@ -39,11 +40,12 @@ fun SignupScreen(vm: SignupViewModel, onBack: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(BbolColors.Background)
             .systemBarsPadding()
             .verticalScroll(rememberScrollState())
             .padding(24.dp),
     ) {
-        Text("회원가입", style = MaterialTheme.typography.headlineMedium)
+        Text("회원가입", style = MaterialTheme.typography.headlineMedium, color = BbolColors.Ink)
         Spacer(Modifier.height(16.dp))
 
         OutlinedTextField(
@@ -51,6 +53,7 @@ fun SignupScreen(vm: SignupViewModel, onBack: () -> Unit) {
             onValueChange = vm::onEmail,
             label = { Text("이메일") },
             singleLine = true,
+            shape = MaterialTheme.shapes.medium,
             isError = s.emailError != null,
             supportingText = {
                 when {
@@ -71,6 +74,7 @@ fun SignupScreen(vm: SignupViewModel, onBack: () -> Unit) {
             onValueChange = vm::onPassword,
             label = { Text("비밀번호") },
             singleLine = true,
+            shape = MaterialTheme.shapes.medium,
             isError = s.passwordError != null,
             supportingText = { Text(s.passwordError ?: "8~20자, 영문 + 숫자 + 특수문자") },
             visualTransformation = PasswordVisualTransformation(),
@@ -82,6 +86,7 @@ fun SignupScreen(vm: SignupViewModel, onBack: () -> Unit) {
             onValueChange = vm::onNickname,
             label = { Text("닉네임") },
             singleLine = true,
+            shape = MaterialTheme.shapes.medium,
             isError = s.nicknameError != null,
             supportingText = {
                 Text(
@@ -106,6 +111,7 @@ fun SignupScreen(vm: SignupViewModel, onBack: () -> Unit) {
                 onValueChange = vm::onDevToken,
                 label = { Text("개발용 인증 토큰") },
                 singleLine = true,
+                shape = MaterialTheme.shapes.medium,
                 isError = s.tokenError != null,
                 supportingText = {
                     Text(s.tokenError ?: "개발 서버 전용. 고정 토큰만 입력하면 이메일을 자동으로 붙여요.")
@@ -125,9 +131,7 @@ fun SignupScreen(vm: SignupViewModel, onBack: () -> Unit) {
             )
         }
         Spacer(Modifier.height(12.dp))
-        Button(onClick = vm::submit, enabled = !s.loading, modifier = Modifier.fillMaxWidth()) {
-            if (s.loading) CircularProgressIndicator(Modifier.height(20.dp), strokeWidth = 2.dp) else Text("가입하기")
-        }
-        TextButton(onClick = onBack) { Text("이미 계정이 있어요") }
+        PrimaryButton("가입하기", onClick = vm::submit, enabled = !s.loading, loading = s.loading)
+        TextButton(onClick = onBack) { Text("이미 계정이 있어요", color = BbolColors.Violet) }
     }
 }
