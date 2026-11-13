@@ -32,7 +32,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import com.bbolbbol.app.BuildConfig
 import com.bbolbbol.app.ui.theme.BbolShapes
 import com.bbolbbol.app.ui.common.PrimaryButton
 import com.bbolbbol.app.ui.theme.BbolColors
@@ -57,7 +56,7 @@ private fun FlowPage(title: String, onBack: () -> Unit, content: @Composable () 
 
 /** 이메일 입력 + 코드 입력 두 단계. 가입과 비밀번호 재설정이 같이 쓴다. */
 @Composable
-private fun EmailCodeSteps(c: CodeStepState, controller: EmailCodeController, sendLabel: String) {
+private fun EmailCodeSteps(c: CodeStepState, controller: EmailCodeController, sendLabel: String, devHint: String?) {
     // 1초마다 쿨다운/유효 시간을 줄인다.
     LaunchedEffect(c.sent, c.verified) {
         while (c.sent && !c.verified) {
@@ -78,9 +77,9 @@ private fun EmailCodeSteps(c: CodeStepState, controller: EmailCodeController, se
         modifier = Modifier.fillMaxWidth(),
     )
     if (!c.sent) {
-        if (BuildConfig.DEBUG) {
+        if (devHint != null) {
             Text(
-                "개발 서버에서는 인증 코드가 서버 로그에 찍혀요",
+                devHint,
                 style = MaterialTheme.typography.bodySmall,
                 color = BbolColors.InkSoft,
             )
@@ -94,9 +93,9 @@ private fun EmailCodeSteps(c: CodeStepState, controller: EmailCodeController, se
         style = MaterialTheme.typography.bodyMedium,
         color = BbolColors.InkSoft,
     )
-    if (BuildConfig.DEBUG) {
+    if (devHint != null) {
         Text(
-            "개발 서버에서는 인증 코드가 서버 로그에 찍혀요",
+            devHint,
             style = MaterialTheme.typography.bodySmall,
             color = BbolColors.InkSoft,
         )
@@ -127,27 +126,13 @@ private fun EmailCodeSteps(c: CodeStepState, controller: EmailCodeController, se
 }
 
 @Composable
-fun SignupFlowScreen(vm: SignupFlowViewModel, onBack: () -> Unit) {
+fun SignupFlowScreen(vm: SignupFlowViewModel, devTools: DevTools, onBack: () -> Unit) {
     val s by vm.state.collectAsState()
     FlowPage("회원가입", onBack) {
         when (s.step) {
             SignupStep.EMAIL, SignupStep.CODE -> {
-                EmailCodeSteps(s.code, vm.codeFlow, "인증 코드 받기")
-                if (BuildConfig.DEBUG && s.step == SignupStep.EMAIL) {
-                    var dev by remember { mutableStateOf("") }
-                    OutlinedTextField(
-                        value = dev,
-                        onValueChange = { dev = it },
-                        label = { Text("개발용 인증 토큰") },
-                        singleLine = true,
-                        shape = MaterialTheme.shapes.medium,
-                        supportingText = { Text("개발 서버 전용 지름길. 고정 토큰을 넣고 아래를 누르면 코드 단계를 건너뛰어요.") },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    OutlinedButton(onClick = { vm.useDevToken(dev) }, modifier = Modifier.fillMaxWidth()) {
-                        Text("개발용 토큰으로 건너뛰기")
-                    }
-                }
+                EmailCodeSteps(s.code, vm.codeFlow, "인증 코드 받기", devTools.codeHint)
+                if (s.step == SignupStep.EMAIL) devTools.SignupShortcut(s.email, vm::applyVerificationToken)
             }
             SignupStep.PROFILE -> {
                 val p = s.profile
@@ -201,12 +186,12 @@ fun SignupFlowScreen(vm: SignupFlowViewModel, onBack: () -> Unit) {
 }
 
 @Composable
-fun PasswordResetScreen(vm: PasswordResetViewModel, onBack: () -> Unit, onDone: () -> Unit) {
+fun PasswordResetScreen(vm: PasswordResetViewModel, devTools: DevTools, onBack: () -> Unit, onDone: () -> Unit) {
     val s by vm.state.collectAsState()
     LaunchedEffect(s.reset.done) { if (s.reset.done) onDone() }
     FlowPage("비밀번호 재설정", onBack) {
         when (s.step) {
-            ResetStep.EMAIL, ResetStep.CODE -> EmailCodeSteps(s.code, vm.codeFlow, "인증 코드 받기")
+            ResetStep.EMAIL, ResetStep.CODE -> EmailCodeSteps(s.code, vm.codeFlow, "인증 코드 받기", devTools.codeHint)
             ResetStep.PASSWORD -> {
                 val r = s.reset
                 Text("${s.code.email} 인증이 완료되었어요. 새 비밀번호를 입력해 주세요.", style = MaterialTheme.typography.bodyMedium)
@@ -231,7 +216,7 @@ fun PasswordResetScreen(vm: PasswordResetViewModel, onBack: () -> Unit, onDone: 
 
 /** 로그인 화면 아래에 끼우는 부분: 비밀번호 찾기, 카카오 로그인, 재설정 성공 안내. */
 @Composable
-fun LoginExtras(vm: KakaoLoginViewModel, resetSucceeded: Boolean, onForgotPassword: () -> Unit) {
+fun LoginExtras(vm: KakaoLoginViewModel, devTools: DevTools, resetSucceeded: Boolean, onForgotPassword: () -> Unit) {
     val s by vm.state.collectAsState()
     Column(horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
         if (resetSucceeded) {
@@ -248,26 +233,7 @@ fun LoginExtras(vm: KakaoLoginViewModel, resetSucceeded: Boolean, onForgotPasswo
         }
         s.error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
     }
-    if (s.showDevDialog) DevKakaoDialog(onDismiss = vm::dismissDialog, onSubmit = vm::login)
-}
-
-@Composable
-private fun DevKakaoDialog(onDismiss: () -> Unit, onSubmit: (String) -> Unit) {
-    var token by remember { mutableStateOf("") }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        containerColor = Color.White,
-        shape = BbolShapes.Card,
-        title = { Text("개발용 카카오 로그인") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("개발 서버 전용입니다. 형식: DEV-KAKAO|아이디|이메일(비워도 됨)|닉네임", style = MaterialTheme.typography.bodySmall)
-                OutlinedTextField(value = token, onValueChange = { token = it }, singleLine = true, label = { Text("카카오 토큰") })
-            }
-        },
-        confirmButton = { TextButton(onClick = { onSubmit(token) }, enabled = token.isNotBlank()) { Text("로그인", color = BbolColors.Violet) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("취소") } },
-    )
+    if (s.showDevDialog) devTools.KakaoDialog(onDismiss = vm::dismissDialog, onSubmit = vm::login)
 }
 
 /** 마이 화면의 계정 영역: 온보딩 안내, 로그아웃, 회원 탈퇴(확인 다이얼로그). */

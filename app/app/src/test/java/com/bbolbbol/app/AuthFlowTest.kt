@@ -10,10 +10,8 @@ import com.bbolbbol.app.data.repository.AuthRepository
 import com.bbolbbol.app.data.repository.PlaceRepository
 import com.bbolbbol.app.data.repository.UserRepository
 import com.bbolbbol.app.ui.auth.AccountViewModel
-import com.bbolbbol.app.ui.auth.DevKakaoTokenProvider
 import com.bbolbbol.app.ui.auth.KakaoLoginViewModel
 import com.bbolbbol.app.ui.auth.KakaoTokenProvider
-import com.bbolbbol.app.ui.auth.KakaoTokenProviders
 import com.bbolbbol.app.ui.auth.PasswordResetViewModel
 import com.bbolbbol.app.ui.auth.ResetStep
 import com.bbolbbol.app.ui.auth.SignupFlowViewModel
@@ -38,6 +36,12 @@ import org.junit.Rule
 import org.junit.Test
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
+
+/** 테스트용 수동 입력 제공자(진짜 개발용 클래스는 debug 소스셋에 있어 공용 테스트가 참조하지 않는다). */
+private class TestManualKakaoProvider : KakaoTokenProvider {
+    override val mode = KakaoTokenProvider.Mode.DEV_MANUAL
+    override suspend fun getToken(manualInput: String?): String? = manualInput?.trim()?.takeIf { it.isNotEmpty() }
+}
 
 private const val SEND_OK = """{"expiresIn":600,"resendAvailableIn":60}"""
 private const val CONFIRM_OK = """{"verificationToken":"vtoken-1","expiresIn":1800}"""
@@ -246,13 +250,34 @@ class AuthFlowTest {
     }
 
     @Test
-    fun devTokenShortcutSkipsCodeStepWithEmailAppended() {
+    fun verificationTokenShortcutSkipsCodeStep() {
         val vm = signupVm()
         vm.codeFlow.onEmail("dev@example.com")
-        vm.useDevToken("DEV-ONLY-FAKE-verification-token")
+        vm.applyVerificationToken("FIXED:dev@example.com")
         assertEquals(SignupStep.PROFILE, vm.state.value.step)
-        assertEquals("DEV-ONLY-FAKE-verification-token:dev@example.com", vm.codeFlow.state.value.verificationToken)
+        assertEquals("FIXED:dev@example.com", vm.codeFlow.state.value.verificationToken)
         assertEquals(0, fx.server.requestCount)
+    }
+
+    @Test
+    fun verificationTokenShortcutNeedsValidEmail() {
+        val vm = signupVm()
+        vm.codeFlow.onEmail("nope")
+        vm.applyVerificationToken("FIXED:nope")
+        assertEquals(SignupStep.EMAIL, vm.state.value.step)
+        assertEquals(0, fx.server.requestCount)
+    }
+
+    @Test
+    fun nicknameAvailabilityCheckInSignupProfileStep() {
+        fx.route("/auth/email-verifications", 200, Json.ok(SEND_OK))
+        val vm = signupVm()
+        vm.codeFlow.onEmail("a@b.com")
+        vm.applyVerificationToken("FIXED:a@b.com")
+        fx.route("/auth/nickname-availability", 200, Json.ok("""{"available":true,"reason":null}"""))
+        vm.onNickname("뽈뽈이")
+        vm.checkNickname()
+        waitUntil { vm.state.value.profile.nicknameOk }
     }
 
     @Test
@@ -400,7 +425,7 @@ class AuthFlowTest {
             "/auth/kakao", 200,
             Json.ok("""{"userId":9,"accessToken":"ka","refreshToken":"kr","isNewUser":true,"suggestedNickname":"카카오닉"}"""),
         )
-        val vm = KakaoLoginViewModel(extra, DevKakaoTokenProvider())
+        val vm = KakaoLoginViewModel(extra, TestManualKakaoProvider())
         vm.onButton()
         assertTrue(vm.state.value.showDevDialog)
         vm.login("DEV-KAKAO|1001|k@example.com|카카오닉")
@@ -415,7 +440,7 @@ class AuthFlowTest {
     @Test
     fun kakaoLoginExistingUserSkipsOnboarding() {
         fx.route("/auth/kakao", 200, Json.ok("""{"userId":9,"accessToken":"ka","refreshToken":"kr","isNewUser":false,"suggestedNickname":null}"""))
-        val vm = KakaoLoginViewModel(extra, DevKakaoTokenProvider())
+        val vm = KakaoLoginViewModel(extra, TestManualKakaoProvider())
         vm.login("DEV-KAKAO|1|x@example.com|nick")
         waitUntil { fx.session.loggedIn.value }
         assertFalse(fx.session.onboardingRequired.value)
@@ -426,7 +451,7 @@ class AuthFlowTest {
     fun kakaoErrorsMapToMessages() {
         for ((status, code) in listOf(401 to "KAKAO401", 502 to "KAKAO502", 409 to "USER4093")) {
             fx.route("/auth/kakao", status, Json.error(code))
-            val vm = KakaoLoginViewModel(extra, DevKakaoTokenProvider())
+            val vm = KakaoLoginViewModel(extra, TestManualKakaoProvider())
             vm.login("DEV-KAKAO-EXPIRED")
             waitUntil { !vm.state.value.loading && vm.state.value.error != null }
             assertEquals(ErrorMessages.forCode(code), vm.state.value.error)
@@ -436,11 +461,9 @@ class AuthFlowTest {
     }
 
     @Test
-    fun releaseProviderIsUnavailableAndNeverCallsServer() {
-        val provider = KakaoTokenProviders.create(debug = false)
-        assertTrue(provider is UnavailableKakaoTokenProvider)
+    fun unavailableProviderDisablesButtonAndNeverCallsServer() {
+        val provider = UnavailableKakaoTokenProvider()
         assertEquals(KakaoTokenProvider.Mode.UNAVAILABLE, provider.mode)
-        assertTrue(KakaoTokenProviders.create(debug = true) is DevKakaoTokenProvider)
         val vm = KakaoLoginViewModel(extra, provider)
         assertFalse(vm.enabled)
         vm.onButton()
