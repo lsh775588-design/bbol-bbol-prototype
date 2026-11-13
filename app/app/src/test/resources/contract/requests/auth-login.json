@@ -1,0 +1,11 @@
+{
+  "method": "POST",
+  "path": "/auth/login",
+  "auth": false,
+  "query": {},
+  "requiredQuery": [],
+  "body": {
+    "email": "contract-new@example.com",
+    "password": "Passw0rd!x"
+  }
+}

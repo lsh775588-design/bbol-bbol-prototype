@@ -1,0 +1,18 @@
+{
+  "endpoint": "GET /place-categories",
+  "case": "success",
+  "httpStatus": 200,
+  "code": "COMMON200",
+  "shape": {
+    "$": "object",
+    "$.code": "string",
+    "$.data": "object",
+    "$.data.categories": "array",
+    "$.data.categories[]": "object",
+    "$.data.categories[].code": "string",
+    "$.data.categories[].name": "string",
+    "$.data.categories[].rewardPoint": "integer",
+    "$.message": "string",
+    "$.success": "boolean"
+  }
+}

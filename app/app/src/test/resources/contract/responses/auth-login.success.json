@@ -1,0 +1,17 @@
+{
+  "endpoint": "POST /auth/login",
+  "case": "success",
+  "httpStatus": 200,
+  "code": "COMMON200",
+  "shape": {
+    "$": "object",
+    "$.code": "string",
+    "$.data": "object",
+    "$.data.accessToken": "string",
+    "$.data.isNewUser": "boolean",
+    "$.data.refreshToken": "string",
+    "$.data.userId": "integer",
+    "$.message": "string",
+    "$.success": "boolean"
+  }
+}

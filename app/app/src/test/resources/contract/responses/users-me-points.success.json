@@ -1,0 +1,16 @@
+{
+  "endpoint": "GET /users/me/points",
+  "case": "success",
+  "httpStatus": 200,
+  "code": "COMMON200",
+  "shape": {
+    "$": "object",
+    "$.code": "string",
+    "$.data": "object",
+    "$.data.completionCount": "integer",
+    "$.data.todayPoint": "integer",
+    "$.data.totalPoint": "integer",
+    "$.message": "string",
+    "$.success": "boolean"
+  }
+}

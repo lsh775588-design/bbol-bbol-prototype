@@ -1,0 +1,12 @@
+{
+  "method": "POST",
+  "path": "/auth/signup",
+  "auth": false,
+  "query": {},
+  "requiredQuery": [],
+  "body": {
+    "verificationToken": "ok:contract-new@example.com",
+    "password": "Passw0rd!x",
+    "nickname": "계약가입"
+  }
+}

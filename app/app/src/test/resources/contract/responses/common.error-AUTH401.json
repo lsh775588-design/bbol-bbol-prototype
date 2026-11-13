@@ -1,0 +1,13 @@
+{
+  "endpoint": "(auth: true 인 모든 엔드포인트)",
+  "case": "error-AUTH401",
+  "httpStatus": 401,
+  "code": "AUTH401",
+  "shape": {
+    "$": "object",
+    "$.code": "string",
+    "$.data": "null",
+    "$.message": "string",
+    "$.success": "boolean"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "method": "GET",
+  "path": "/users/me",
+  "auth": true,
+  "query": {},
+  "requiredQuery": []
+}
