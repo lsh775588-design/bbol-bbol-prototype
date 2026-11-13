@@ -8,7 +8,9 @@ import com.bbolbbol.app.data.api.BbolApi
 import com.bbolbbol.app.data.local.AuthSession
 import com.bbolbbol.app.data.local.EncryptedTokenStore
 import com.bbolbbol.app.data.repository.AuthRepository
+import com.bbolbbol.app.data.repository.CompletionRepository
 import com.bbolbbol.app.data.repository.PlaceRepository
+import com.bbolbbol.app.data.repository.PointRepository
 import com.bbolbbol.app.data.repository.UserRepository
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import okhttp3.MediaType.Companion.toMediaType
@@ -38,6 +40,8 @@ class AppContainer(context: Context) {
     val authRepository = AuthRepository(api, session)
     val userRepository = UserRepository(api)
     val placeRepository = PlaceRepository(api)
+    val completionRepository = CompletionRepository(api)
+    val pointRepository = PointRepository(api)
 }
 
 class BbolApplication : Application() {

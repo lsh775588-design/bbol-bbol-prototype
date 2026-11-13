@@ -108,3 +108,90 @@ data class PlaceDetail(
     @SerialName("isCompleted") val isCompleted: Boolean = false,
     val myLastCompletedAt: String? = null,
 )
+
+// ---- 2단계: 도착 인증, 포인트, 활동 일지, 추천 ----
+
+/** 서버 CompletionRequest와 같은 키. isMockLocation은 키 그대로 보낸다. */
+@Serializable
+data class CompletionRequest(
+    val lat: Double,
+    val lng: Double,
+    val accuracy: Double,
+    val isMockLocation: Boolean,
+)
+
+@Serializable
+data class CompletionResponse(
+    val completionId: Long = 0,
+    val placeId: Long = 0,
+    val placeName: String = "",
+    @SerialName("isFirstVisit") val isFirstVisit: Boolean = false,
+    val earnedPoint: Int = 0,
+    val totalPoint: Long = 0,
+    val completedAt: String? = null,
+    val photoBonusPoint: Int = 0,
+    val photoDeadline: String? = null,
+)
+
+@Serializable
+data class PointSummary(val totalPoint: Long = 0, val todayPoint: Long = 0, val completionCount: Long = 0)
+
+@Serializable
+data class PointHistoryItem(
+    val historyId: Long,
+    val type: String = "",
+    val point: Int = 0,
+    val completionId: Long = 0,
+    val placeId: Long = 0,
+    val placeName: String = "",
+    val category: String = "",
+    val createdAt: String? = null,
+)
+
+@Serializable
+data class PointHistoryPage(
+    val histories: List<PointHistoryItem> = emptyList(),
+    val hasNext: Boolean = false,
+    val nextCursor: Long? = null,
+)
+
+@Serializable
+data class CompletionLogItem(
+    val completionId: Long,
+    val placeId: Long = 0,
+    val placeName: String = "",
+    val category: String = "",
+    val address: String = "",
+    val earnedPoint: Int = 0,
+    val photoUrl: String? = null,
+    val completedAt: String? = null,
+)
+
+@Serializable
+data class CompletionLogPage(
+    val completions: List<CompletionLogItem> = emptyList(),
+    val hasNext: Boolean = false,
+    val nextCursor: Long? = null,
+)
+
+@Serializable
+data class RecommendedPlace(
+    val placeId: Long,
+    val name: String,
+    val category: String,
+    val lat: Double,
+    val lng: Double,
+    val distance: Long = 0,
+    val radius: Int = 0,
+    val notifyRadius: Int = 0,
+    val rewardPoint: Int = 0,
+    val expectedPoint: Int = 0,
+    @SerialName("isHot") val isHot: Boolean = false,
+    val hotType: String? = null,
+    val visitedBefore: Boolean = false,
+    @SerialName("isCompleted") val isCompleted: Boolean = false,
+    val reason: String = "",
+)
+
+@Serializable
+data class RecommendationListResponse(val places: List<RecommendedPlace> = emptyList())

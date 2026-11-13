@@ -41,4 +41,36 @@ interface BbolApi {
 
     @GET("places/{id}")
     suspend fun place(@Path("id") id: Long): Response<ApiEnvelope<PlaceDetail>>
+
+    @POST("places/{id}/completions")
+    suspend fun complete(
+        @Path("id") id: Long,
+        @Body body: CompletionRequest,
+    ): Response<ApiEnvelope<CompletionResponse>>
+
+    @GET("users/me/points")
+    suspend fun points(): Response<ApiEnvelope<PointSummary>>
+
+    @GET("users/me/point-histories")
+    suspend fun pointHistories(
+        @Query("cursor") cursor: Long? = null,
+        @Query("size") size: Int? = null,
+        @Query("type") type: String? = null,
+    ): Response<ApiEnvelope<PointHistoryPage>>
+
+    @GET("users/me/completions")
+    suspend fun completions(
+        @Query("from") from: String? = null,
+        @Query("to") to: String? = null,
+        @Query("category") category: String? = null,
+        @Query("cursor") cursor: Long? = null,
+        @Query("size") size: Int? = null,
+    ): Response<ApiEnvelope<CompletionLogPage>>
+
+    @GET("places/recommendations")
+    suspend fun recommendations(
+        @Query("lat") lat: Double,
+        @Query("lng") lng: Double,
+        @Query("size") size: Int? = null,
+    ): Response<ApiEnvelope<RecommendationListResponse>>
 }
