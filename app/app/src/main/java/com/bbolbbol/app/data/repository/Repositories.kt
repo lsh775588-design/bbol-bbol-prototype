@@ -4,6 +4,12 @@ import com.bbolbbol.app.data.api.ApiResult
 import com.bbolbbol.app.data.api.AvailabilityResult
 import com.bbolbbol.app.data.api.BbolApi
 import com.bbolbbol.app.data.api.CategoryItem
+import com.bbolbbol.app.data.api.CompletionLogPage
+import com.bbolbbol.app.data.api.CompletionRequest
+import com.bbolbbol.app.data.api.CompletionResponse
+import com.bbolbbol.app.data.api.PointHistoryPage
+import com.bbolbbol.app.data.api.PointSummary
+import com.bbolbbol.app.data.api.RecommendedPlace
 import com.bbolbbol.app.data.api.LoginRequest
 import com.bbolbbol.app.data.api.MeResponse
 import com.bbolbbol.app.data.api.NicknameChangeRequest
@@ -59,4 +65,24 @@ class PlaceRepository(private val api: BbolApi) {
         apiCall { api.places(lat, lng, radius, category, size) }.map { it.places }
 
     suspend fun place(id: Long): ApiResult<PlaceDetail> = apiCall { api.place(id) }
+
+    suspend fun recommendations(lat: Double, lng: Double, size: Int = 10): ApiResult<List<RecommendedPlace>> =
+        apiCall { api.recommendations(lat, lng, size) }.map { it.places }
 }
+
+class CompletionRepository(private val api: BbolApi) {
+    suspend fun complete(placeId: Long, request: CompletionRequest): ApiResult<CompletionResponse> =
+        apiCall { api.complete(placeId, request) }
+
+    suspend fun log(cursor: Long?, size: Int = PAGE_SIZE): ApiResult<CompletionLogPage> =
+        apiCall { api.completions(cursor = cursor, size = size) }
+}
+
+class PointRepository(private val api: BbolApi) {
+    suspend fun summary(): ApiResult<PointSummary> = apiCall { api.points() }
+
+    suspend fun histories(cursor: Long?, size: Int = PAGE_SIZE): ApiResult<PointHistoryPage> =
+        apiCall { api.pointHistories(cursor = cursor, size = size) }
+}
+
+const val PAGE_SIZE = 20

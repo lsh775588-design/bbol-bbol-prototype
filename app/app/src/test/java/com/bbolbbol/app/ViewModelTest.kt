@@ -1,7 +1,9 @@
 package com.bbolbbol.app
 
 import com.bbolbbol.app.data.repository.AuthRepository
+import com.bbolbbol.app.data.repository.CompletionRepository
 import com.bbolbbol.app.data.repository.PlaceRepository
+import com.bbolbbol.app.data.repository.PointRepository
 import com.bbolbbol.app.data.repository.UserRepository
 import com.bbolbbol.app.ui.login.LoginViewModel
 import com.bbolbbol.app.ui.map.JONGNO_LAT
@@ -153,7 +155,8 @@ class ViewModelTest {
     fun meViewModelLoadsAndChangesNickname() {
         fx.session.saveTokens("a", "r")
         fx.enqueue(200, Json.ok(ME_JSON))
-        val vm = MeViewModel(UserRepository(fx.api), auth)
+        fx.route("/users/me/points", 200, Json.ok(POINTS_JSON))
+        val vm = MeViewModel(UserRepository(fx.api), auth, PointRepository(fx.api))
         waitUntil { vm.state.value.me != null }
         vm.onNickname("새닉네임")
         fx.enqueue(200, Json.ok("""{"nickname":"새닉네임","nextChangeableAt":"2026-12-13T10:00:00"}"""))
@@ -168,7 +171,8 @@ class ViewModelTest {
     fun meNicknameCooldownErrorMessage() {
         fx.session.saveTokens("a", "r")
         fx.enqueue(200, Json.ok(ME_JSON))
-        val vm = MeViewModel(UserRepository(fx.api), auth)
+        fx.route("/users/me/points", 200, Json.ok(POINTS_JSON))
+        val vm = MeViewModel(UserRepository(fx.api), auth, PointRepository(fx.api))
         waitUntil { vm.state.value.me != null }
         vm.onNickname("새닉네임")
         fx.enqueue(400, Json.error("USER4002", """{"nextChangeableAt":"2026-12-13T10:00:00"}"""))
@@ -182,7 +186,7 @@ class ViewModelTest {
     fun mapBrowseModeCentersOnJongnoAndLoadsPlaces() {
         fx.session.saveTokens("a", "r")
         fx.enqueue(200, Json.ok("""{"categories":[{"code":"CAFE","name":"카페","rewardPoint":10}]}"""))
-        val vm = MapViewModel(PlaceRepository(fx.api))
+        val vm = MapViewModel(PlaceRepository(fx.api), CompletionRepository(fx.api))
         waitUntil { vm.state.value.categories.isNotEmpty() }
         fx.enqueue(
             200,
@@ -215,6 +219,7 @@ class ViewModelTest {
     }
 
     private companion object {
+        const val POINTS_JSON = """{"totalPoint":0,"todayPoint":0,"completionCount":0}"""
         const val ME_JSON =
             """{"userId":1,"email":"a@b.com","nickname":"기존","loginType":"EMAIL","onboardingCompleted":false,"createdAt":"2026-11-01T10:00:00"}"""
     }

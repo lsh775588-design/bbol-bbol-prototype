@@ -31,8 +31,26 @@ class Fixture {
         .build()
         .create(BbolApi::class.java)
 
+    private val routes = java.util.concurrent.ConcurrentHashMap<String, MockResponse>()
+    private val queue = okhttp3.mockwebserver.QueueDispatcher()
+
+    init {
+        // 경로(쿼리 제외)가 등록돼 있으면 그 응답을, 아니면 enqueue 순서대로 돌려준다.
+        server.dispatcher = object : okhttp3.mockwebserver.Dispatcher() {
+            override fun dispatch(request: okhttp3.mockwebserver.RecordedRequest): MockResponse {
+                val path = request.path.orEmpty().substringBefore("?")
+                return routes[path] ?: queue.dispatch(request)
+            }
+        }
+    }
+
+    /** 경로 고정 응답. 요청 순서와 상관없이 같은 경로에 항상 이 응답을 준다. */
+    fun route(path: String, status: Int, body: String) {
+        routes[path] = MockResponse().setResponseCode(status).setHeader("Content-Type", "application/json").setBody(body)
+    }
+
     fun enqueue(status: Int, body: String) {
-        server.enqueue(
+        queue.enqueueResponse(
             MockResponse().setResponseCode(status).setHeader("Content-Type", "application/json").setBody(body),
         )
     }

@@ -19,9 +19,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -54,7 +56,13 @@ import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
 
 @Composable
-fun MapScreen(vm: MapViewModel, onOpenMe: () -> Unit) {
+fun MapScreen(
+    vm: MapViewModel,
+    onOpenMe: () -> Unit,
+    onOpenRecommend: (lat: Double, lng: Double) -> Unit,
+    pickedPlaceId: Long? = null,
+    onPickedConsumed: () -> Unit = {},
+) {
     val s by vm.state.collectAsState()
     val context = LocalContext.current
 
@@ -67,6 +75,14 @@ fun MapScreen(vm: MapViewModel, onOpenMe: () -> Unit) {
 
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { grants ->
         if (grants.values.any { it }) locate() else vm.enterBrowseMode()
+    }
+
+    // 추천 화면에서 고른 장소는 지도로 돌아와 상세 시트를 열고 카메라를 옮긴다.
+    LaunchedEffect(pickedPlaceId) {
+        if (pickedPlaceId != null) {
+            vm.openDetail(pickedPlaceId, centerOnPlace = true)
+            onPickedConsumed()
+        }
     }
 
     // 이미 권한이 있으면 설명 화면을 건너뛴다.
@@ -88,7 +104,7 @@ fun MapScreen(vm: MapViewModel, onOpenMe: () -> Unit) {
                 Text("내 위치를 찾는 중이에요")
             }
         }
-        else -> MapContent(vm, onOpenMe, onRelocate = { launcher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)) })
+        else -> MapContent(vm, onOpenMe, onOpenRecommend, onRelocate = { launcher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)) })
     }
 }
 
@@ -120,14 +136,24 @@ private fun ExplainScreen(onAllow: () -> Unit, onBrowse: () -> Unit) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun MapContent(vm: MapViewModel, onOpenMe: () -> Unit, onRelocate: () -> Unit) {
+private fun MapContent(
+    vm: MapViewModel,
+    onOpenMe: () -> Unit,
+    onOpenRecommend: (Double, Double) -> Unit,
+    onRelocate: () -> Unit,
+) {
     val s by vm.state.collectAsState()
+    val context = LocalContext.current
     Box(Modifier.fillMaxSize()) {
         OsmMap(
-            lat = s.lat,
-            lng = s.lng,
-            zoom = if (s.isBrowse) 14.0 else 16.0,
-            places = s.places.map { MarkerData(it.placeId, it.name, it.lat, it.lng, it.isHot) },
+            lat = s.focusLat ?: s.lat,
+            lng = s.focusLng ?: s.lng,
+            zoom = if (s.isBrowse && s.focusLat == null) 14.0 else 16.0,
+            places = s.places.map { MarkerData(it.placeId, it.name, it.lat, it.lng, it.isHot) }.let { list ->
+                // 추천에서 고른 장소가 현재 검색 반경 밖이어도 마커를 보여준다.
+                val d = s.detail
+                if (d != null && list.none { it.id == d.placeId }) list + MarkerData(d.placeId, d.name, d.lat, d.lng, d.isHot) else list
+            },
             onMarker = vm::openDetail,
             modifier = Modifier.fillMaxSize(),
         )
@@ -140,7 +166,10 @@ private fun MapContent(vm: MapViewModel, onOpenMe: () -> Unit, onRelocate: () ->
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
                         Text("주변 장소", style = MaterialTheme.typography.titleLarge)
-                        TextButton(onClick = onOpenMe) { Text("내 정보") }
+                        Row {
+                            TextButton(onClick = { onOpenRecommend(s.lat, s.lng) }) { Text("뽈뽈 추천") }
+                            TextButton(onClick = onOpenMe) { Text("내 정보") }
+                        }
                     }
                     LazyRow(
                         contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp),
@@ -201,12 +230,24 @@ private fun MapContent(vm: MapViewModel, onOpenMe: () -> Unit, onRelocate: () ->
         }
     }
 
+    s.arrivalOutcome?.let { ArrivalDialog(it, vm::dismissArrivalOutcome) }
+
     if (s.detail != null || s.detailLoading || s.detailError != null) {
         ModalBottomSheet(onDismissRequest = vm::closeDetail) {
             Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 32.dp)) {
                 when {
                     s.detailLoading -> CircularProgressIndicator(Modifier.align(Alignment.CenterHorizontally))
-                    s.detail != null -> PlaceDetailContent(s.detail!!, s.isBrowse)
+                    s.detail != null -> PlaceDetailContent(
+                        d = s.detail!!,
+                        blockedReason = s.arrivalBlockedReason(hasLocationPermission(context)),
+                        arriving = s.arriving,
+                        onArrive = {
+                            val id = s.detail!!.placeId
+                            fetchLocation(context) { loc ->
+                                if (loc != null) vm.arrive(id, loc.toArrivalFix()) else vm.onArrivalLocationFailed()
+                            }
+                        },
+                    )
                     else -> Text(s.detailError ?: "", color = MaterialTheme.colorScheme.error)
                 }
             }
@@ -215,7 +256,7 @@ private fun MapContent(vm: MapViewModel, onOpenMe: () -> Unit, onRelocate: () ->
 }
 
 @Composable
-private fun PlaceDetailContent(d: PlaceDetail, browse: Boolean) {
+private fun PlaceDetailContent(d: PlaceDetail, blockedReason: String?, arriving: Boolean, onArrive: () -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(d.name, style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f, fill = false))
         if (d.isHot) Text("HOT", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelLarge)
@@ -227,15 +268,51 @@ private fun PlaceDetailContent(d: PlaceDetail, browse: Boolean) {
     Spacer(Modifier.height(8.dp))
     Text("도착 시 ${d.expectedPoint}P (기본 ${d.rewardPoint}P)")
     Text("오늘 방문 완료: ${if (d.isCompleted) "예" else "아니요"} · 누적 ${d.completedCount}명")
-    if (browse) {
+    Spacer(Modifier.height(12.dp))
+    Button(onClick = onArrive, enabled = blockedReason == null && !arriving, modifier = Modifier.fillMaxWidth()) {
+        if (arriving) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp) else Text("도착 인증하기")
+    }
+    if (blockedReason != null) {
         Spacer(Modifier.height(8.dp))
-        Text(
-            "둘러보기 모드에서는 도착 인증을 할 수 없어요.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.secondary,
-        )
+        Text(blockedReason, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.secondary)
     }
 }
+
+@Composable
+private fun ArrivalDialog(outcome: ArrivalOutcome, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = { TextButton(onClick = onDismiss) { Text("확인") } },
+        title = { Text(if (outcome is ArrivalOutcome.Success) "도착 인증 완료" else "도착 인증 실패") },
+        text = {
+            when (outcome) {
+                is ArrivalOutcome.Success -> Column {
+                    val r = outcome.result
+                    Text(r.placeName, style = MaterialTheme.typography.titleMedium)
+                    if (r.isFirstVisit) Text("첫 방문이에요", color = MaterialTheme.colorScheme.primary)
+                    Text("${r.earnedPoint}P를 받았어요. 총 ${r.totalPoint}P")
+                    if (r.photoBonusPoint > 0) {
+                        Text(
+                            "사진 보너스는 준비 중이에요",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.secondary,
+                        )
+                    }
+                }
+                is ArrivalOutcome.Error -> Text(outcome.message)
+            }
+        },
+    )
+}
+
+/** Location.isMock은 API 31부터, 그 전에는 isFromMockProvider를 쓴다. */
+@Suppress("DEPRECATION")
+private fun Location.toArrivalFix() = ArrivalFix(
+    lat = latitude,
+    lng = longitude,
+    accuracy = accuracy.toDouble(),
+    isMock = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) isMock else isFromMockProvider,
+)
 
 private data class MarkerData(val id: Long, val title: String, val lat: Double, val lng: Double, val hot: Boolean)
 

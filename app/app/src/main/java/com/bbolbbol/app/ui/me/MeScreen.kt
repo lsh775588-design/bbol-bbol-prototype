@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -26,7 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun MeScreen(vm: MeViewModel, onBack: () -> Unit) {
+fun MeScreen(vm: MeViewModel, onBack: () -> Unit, onPointHistory: () -> Unit, onActivityLog: () -> Unit) {
     val s by vm.state.collectAsState()
     Column(
         modifier = Modifier
@@ -39,6 +40,12 @@ fun MeScreen(vm: MeViewModel, onBack: () -> Unit) {
             modifier = Modifier.fillMaxWidth()) {
             Text("내 정보", style = MaterialTheme.typography.headlineMedium)
             TextButton(onClick = onBack) { Text("지도") }
+        }
+        Spacer(Modifier.height(16.dp))
+        PointSummaryCard(s, vm::loadPoints)
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedButton(onClick = onPointHistory, modifier = Modifier.weight(1f)) { Text("포인트 내역") }
+            OutlinedButton(onClick = onActivityLog, modifier = Modifier.weight(1f)) { Text("활동 일지") }
         }
         Spacer(Modifier.height(16.dp))
         when {
@@ -73,6 +80,37 @@ fun MeScreen(vm: MeViewModel, onBack: () -> Unit) {
         }
         Spacer(Modifier.height(32.dp))
         OutlinedButton(onClick = vm::logout, modifier = Modifier.fillMaxWidth()) { Text("로그아웃") }
+    }
+}
+
+@Composable
+private fun PointSummaryCard(s: MeUiState, onRetry: () -> Unit) {
+    Card(Modifier.fillMaxWidth().padding(bottom = 12.dp)) {
+        Column(Modifier.padding(16.dp)) {
+            Text("내 포인트", style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.height(8.dp))
+            val p = s.points
+            when {
+                s.pointsLoading -> CircularProgressIndicator()
+                p == null -> {
+                    Text(s.pointsError ?: "불러오지 못했어요.", color = MaterialTheme.colorScheme.error)
+                    OutlinedButton(onClick = onRetry) { Text("다시 시도") }
+                }
+                else -> Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Stat("총 포인트", "${p.totalPoint}P")
+                    Stat("오늘 포인트", "${p.todayPoint}P")
+                    Stat("인증 횟수", "${p.completionCount}회")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun Stat(label: String, value: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(value, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
+        Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.secondary)
     }
 }
 
