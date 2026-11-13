@@ -101,6 +101,8 @@ private inline fun <reified VM : ViewModel> factory(crossinline create: () -> VM
 fun AppNav(container: AppContainer) {
     val nav = rememberNavController()
     val loggedIn by container.session.loggedIn.collectAsState()
+    // 시작 화면은 처음 한 번만 정한다. loggedIn이 바뀔 때마다 바꾸면 NavHost가 그래프를 다시 만들어 백스택이 초기화된다.
+    val startDestination = remember { if (container.session.loggedIn.value) Routes.HOME else Routes.LOGIN }
     val backEntry by nav.currentBackStackEntryAsState()
     val currentRoute = backEntry?.destination?.route
 
@@ -111,13 +113,9 @@ fun AppNav(container: AppContainer) {
 
     // 로그인 상태가 바뀌면(로그인 성공, 로그아웃, AUTH401로 토큰 삭제) 백스택을 비우고 이동한다.
     LaunchedEffect(loggedIn) {
-        val route = nav.currentDestination?.route
-        val preLogin = route == Routes.LOGIN ||
-            route == AuthRoutes.SIGNUP_FLOW || route == AuthRoutes.PASSWORD_RESET
-        // collectAsState로 읽은 값은 markOnboarding 직후 아직 갱신 전일 수 있다. 흐름의 현재 값을 직접 읽는다.
         if (loggedIn) resetSucceeded = false
-        if (loggedIn && preLogin) nav.resetTo(postLoginRoute(container.session))
-        if (!loggedIn && route != null && !preLogin) nav.resetTo(Routes.LOGIN)
+        // collectAsState로 읽은 값은 markOnboarding 직후 아직 갱신 전일 수 있다. 흐름의 현재 값을 직접 읽는다.
+        loginStateTarget(loggedIn, nav.currentDestination?.route, container.session)?.let { nav.resetTo(it) }
     }
 
     // 앱 시작 시 저장된 토큰이 있으면 온보딩 완료 여부를 한 번 확인한다(실패해도 진입을 막지 않는다).
@@ -153,7 +151,7 @@ fun AppNav(container: AppContainer) {
         // 아래쪽 패딩만 쓴다. 위쪽(상태바)은 각 화면이 직접 처리한다.
         NavHost(
             navController = nav,
-            startDestination = if (loggedIn) Routes.HOME else Routes.LOGIN,
+            startDestination = startDestination,
             modifier = Modifier.padding(bottom = padding.calculateBottomPadding()),
         ) {
             composable(Routes.LOGIN) {
@@ -276,6 +274,20 @@ fun AppNav(container: AppContainer) {
                 )
             }
         }
+    }
+}
+
+/** 로그인 상태와 현재 화면으로 정한 이동 대상. 이동이 필요 없으면 null. */
+internal fun loginStateTarget(
+    loggedIn: Boolean,
+    route: String?,
+    session: com.bbolbbol.app.data.local.AuthSession,
+): String? {
+    val preLogin = route == Routes.LOGIN || route == AuthRoutes.SIGNUP_FLOW || route == AuthRoutes.PASSWORD_RESET
+    return when {
+        loggedIn && preLogin -> postLoginRoute(session)
+        !loggedIn && route != null && !preLogin -> Routes.LOGIN
+        else -> null
     }
 }
 

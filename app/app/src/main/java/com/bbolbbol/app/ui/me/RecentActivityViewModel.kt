@@ -22,6 +22,17 @@ class RecentActivityViewModel(private val completions: CompletionRepository) : V
         load()
     }
 
+    private var entered = false
+
+    /** 화면이 보일 때마다 호출. 다시 들어올 때는 목록을 비우지 않고 조용히 갱신한다. */
+    fun onEnter() {
+        if (!entered) { entered = true; return }
+        viewModelScope.launch {
+            val r = completions.log(null, RECENT_COUNT)
+            if (r is ApiResult.Success) _state.value = Section(false, r.data.completions.take(RECENT_COUNT))
+        }
+    }
+
     fun load() {
         _state.value = Section()
         viewModelScope.launch {

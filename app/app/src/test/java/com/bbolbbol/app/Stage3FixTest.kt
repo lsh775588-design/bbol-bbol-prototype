@@ -8,6 +8,7 @@ import com.bbolbbol.app.ui.auth.AuthRoutes
 import com.bbolbbol.app.ui.auth.CodeStepState
 import com.bbolbbol.app.ui.map.MapUiState
 import com.bbolbbol.app.ui.nav.Routes
+import com.bbolbbol.app.ui.nav.loginStateTarget
 import com.bbolbbol.app.ui.nav.postLoginRoute
 import com.bbolbbol.app.ui.onboarding.OnboardingUiState
 import kotlinx.coroutines.runBlocking
@@ -106,5 +107,70 @@ class Stage3FixTest {
         assertFalse(MapUiState().detailCompletedToday)
         assertFalse(MapUiState(detail = detail(false)).detailCompletedToday)
         assertTrue(MapUiState(detail = detail(true)).detailCompletedToday)
+    }
+}
+
+/** 재검증에서 찾은 버그: 내비게이션 결정, 마이 재진입, 가입 버튼. */
+class Stage3Fix2Test {
+    @get:Rule
+    val main = MainDispatcherRule()
+    private val fx = Fixture()
+
+    @After
+    fun tearDown() = fx.shutdown()
+
+    private fun waitUntil(cond: () -> Boolean) {
+        val end = System.currentTimeMillis() + 5000
+        while (!cond()) {
+            if (System.currentTimeMillis() > end) throw AssertionError("시간 초과")
+            Thread.sleep(10)
+        }
+    }
+
+    @Test
+    fun signupLandsOnOnboardingFromSignupScreen() {
+        fx.session.markOnboarding(true)
+        fx.session.saveTokens("a", "r")
+        assertEquals(AuthRoutes.ONBOARDING, loginStateTarget(true, AuthRoutes.SIGNUP_FLOW, fx.session))
+        assertEquals(AuthRoutes.ONBOARDING, loginStateTarget(true, Routes.LOGIN, fx.session))
+    }
+
+    @Test
+    fun returningUserLandsOnHomeAndOthersStay() {
+        fx.session.markOnboarding(false)
+        fx.session.saveTokens("a", "r")
+        assertEquals(Routes.HOME, loginStateTarget(true, Routes.LOGIN, fx.session))
+        assertEquals(null, loginStateTarget(true, Routes.HOME, fx.session))
+        assertEquals(null, loginStateTarget(true, AuthRoutes.ONBOARDING, fx.session))
+    }
+
+    @Test
+    fun loggedOutOutsideLoginGoesToLogin() {
+        assertEquals(Routes.LOGIN, loginStateTarget(false, Routes.ME, fx.session))
+        assertEquals(null, loginStateTarget(false, Routes.LOGIN, fx.session))
+        assertEquals(null, loginStateTarget(false, null, fx.session))
+    }
+
+    @Test
+    fun meRefreshesPointsOnReentry() {
+        fx.session.saveTokens("a", "r")
+        val me = """{"userId":1,"email":"a@b.com","nickname":"닉","loginType":"EMAIL","onboardingCompleted":true,"createdAt":"2026-11-01T10:00:00"}"""
+        fx.route("/users/me", 200, Json.ok(me))
+        fx.route("/users/me/points", 200, Json.ok("""{"totalPoint":0,"todayPoint":0,"completionCount":0}"""))
+        val vm = com.bbolbbol.app.ui.me.MeViewModel(UserRepository(fx.api), AuthRepository(fx.api, fx.session), com.bbolbbol.app.data.repository.PointRepository(fx.api))
+        waitUntil { vm.state.value.points != null }
+        vm.onEnter() // 첫 진입: init이 이미 불렀다
+        fx.route("/users/me/points", 200, Json.ok("""{"totalPoint":350,"todayPoint":350,"completionCount":1}"""))
+        vm.onEnter() // 재진입
+        waitUntil { vm.state.value.points?.totalPoint == 350L }
+        assertFalse(vm.state.value.pointsLoading)
+    }
+
+    @Test
+    fun signupButtonNeedsPasswordAndNickname() {
+        assertFalse(com.bbolbbol.app.ui.auth.SignupProfileState().canSubmit)
+        assertFalse(com.bbolbbol.app.ui.auth.SignupProfileState(password = "abcd1234!").canSubmit)
+        assertTrue(com.bbolbbol.app.ui.auth.SignupProfileState(password = "abcd1234!", nickname = "닉").canSubmit)
+        assertFalse(com.bbolbbol.app.ui.auth.SignupProfileState(password = "x", nickname = "닉", loading = true).canSubmit)
     }
 }

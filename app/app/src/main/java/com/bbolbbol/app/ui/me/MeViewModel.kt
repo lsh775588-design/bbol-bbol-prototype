@@ -42,6 +42,21 @@ class MeViewModel(
         loadPoints()
     }
 
+    private var entered = false
+
+    /** 화면이 보일 때마다 호출. 처음은 init이 불렀으니 건너뛰고, 다시 들어올 때는 조용히 갱신한다. */
+    fun onEnter() {
+        if (!entered) { entered = true; return }
+        viewModelScope.launch {
+            val r = users.me()
+            if (r is ApiResult.Success) _state.update { it.copy(me = r.data, nicknameInput = if (it.saving) it.nicknameInput else r.data.nickname) }
+        }
+        viewModelScope.launch {
+            val r = pointRepo.summary()
+            if (r is ApiResult.Success) _state.update { it.copy(points = r.data, pointsError = null) }
+        }
+    }
+
     fun loadPoints() {
         _state.update { it.copy(pointsLoading = true, pointsError = null) }
         viewModelScope.launch {

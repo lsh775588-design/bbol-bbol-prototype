@@ -26,7 +26,9 @@ data class SignupProfileState(
     val nicknameOk: Boolean = false,
     val formError: String? = null,
     val loading: Boolean = false,
-)
+) {
+    val canSubmit get() = password.isNotEmpty() && nickname.isNotBlank() && !loading
+}
 
 data class SignupFlowState(
     val step: SignupStep = SignupStep.EMAIL,

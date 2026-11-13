@@ -170,7 +170,7 @@ fun SignupFlowScreen(vm: SignupFlowViewModel, devTools: DevTools, onBack: () -> 
                 )
                 p.formError?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
                 Spacer(Modifier.height(4.dp))
-                PrimaryButton("가입하기", onClick = vm::submit, enabled = !p.loading, loading = p.loading)
+                PrimaryButton("가입하기", onClick = vm::submit, enabled = p.canSubmit, loading = p.loading)
                 Text(
                     "가입 후 추가 정보(연령대, 성별, 관심 카테고리)를 입력하면 도착 인증을 할 수 있어요.",
                     style = MaterialTheme.typography.bodySmall,

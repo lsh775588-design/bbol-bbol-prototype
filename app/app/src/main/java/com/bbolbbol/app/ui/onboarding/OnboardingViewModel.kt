@@ -73,7 +73,8 @@ class OnboardingViewModel(
                     loading = false,
                     categories = cats.data,
                     showNickname = kakaoFirst,
-                    nickname = if (kakaoFirst) session.suggestedNickname.orEmpty() else "",
+                    // 제안값은 메모리에만 있어 앱을 다시 켜면 사라진다. 그때는 서버에 있는 닉네임을 쓴다.
+                    nickname = if (kakaoFirst) session.suggestedNickname ?: me.data.nickname else "",
                     ageGroup = info.data.ageGroup,
                     gender = info.data.gender,
                     interests = info.data.interests.take(MAX_INTERESTS),
