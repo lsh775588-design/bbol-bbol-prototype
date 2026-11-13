@@ -57,6 +57,10 @@ fun MeScreen(
 ) {
     val s by vm.state.collectAsState()
     val recent by recentVm.state.collectAsState()
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        vm.onEnter()
+        recentVm.onEnter()
+    }
     Column(
         modifier = Modifier
             .fillMaxSize()
