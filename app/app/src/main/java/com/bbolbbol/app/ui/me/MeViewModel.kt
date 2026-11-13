@@ -4,7 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bbolbbol.app.data.api.ApiResult
 import com.bbolbbol.app.data.api.MeResponse
+import com.bbolbbol.app.data.api.PointSummary
 import com.bbolbbol.app.data.repository.AuthRepository
+import com.bbolbbol.app.data.repository.PointRepository
 import com.bbolbbol.app.data.repository.UserRepository
 import com.bbolbbol.app.util.ErrorMessages
 import com.bbolbbol.app.util.Validators
@@ -22,17 +24,32 @@ data class MeUiState(
     val saving: Boolean = false,
     val nicknameMessage: String? = null,
     val nicknameIsError: Boolean = false,
+    val pointsLoading: Boolean = true,
+    val points: PointSummary? = null,
+    val pointsError: String? = null,
 )
 
 class MeViewModel(
     private val users: UserRepository,
     private val auth: AuthRepository,
+    private val pointRepo: PointRepository,
 ) : ViewModel() {
     private val _state = MutableStateFlow(MeUiState())
     val state: StateFlow<MeUiState> = _state.asStateFlow()
 
     init {
         load()
+        loadPoints()
+    }
+
+    fun loadPoints() {
+        _state.update { it.copy(pointsLoading = true, pointsError = null) }
+        viewModelScope.launch {
+            when (val r = pointRepo.summary()) {
+                is ApiResult.Success -> _state.update { it.copy(pointsLoading = false, points = r.data) }
+                else -> _state.update { it.copy(pointsLoading = false, pointsError = ErrorMessages.message(r)) }
+            }
+        }
     }
 
     fun load() {
