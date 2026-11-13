@@ -13,6 +13,14 @@
   - `docs/` 설계 문서, `docs/reports/` 단계별 보고서
 - 시간대 Asia/Seoul, 한 주는 월요일 시작.
 
+## 서버 스택 결정 (2026-11-13, 사용자 결정)
+팀 서버 저장소 https://github.com/Bbol-Bbol/server 가 공식 저장소이고 스택은 **Kotlin 2.3 + Spring Boot 4.1 + PostgreSQL 17/PostGIS + Redis**다. 위 "프로젝트"의 Java 21 / Spring Boot 3.5 / MySQL 구현(`backend/`)은 **참고용 구현**이 되었고, 서버 작업은 팀 저장소 기준으로 이식해서 계속한다.
+- 팀 저장소 복제본: `C:\dev\bbolbbol\server`(바깥 저장소에서는 `.git/info/exclude`로 제외). 이식 브랜치는 `port/*`, 병렬 작업은 `server/.worktrees/<이름>`.
+- **팀 저장소(origin)에는 절대 push하지 않는다.** 이식은 로컬 브랜치에서만 하고, 올리는 것은 사용자가 "올려줘"라고 할 때만 한다.
+- 팀 저장소의 구조와 코드 스타일을 따른다(`com.bbolbbol.server.{domain,global}`, 도메인별 `ErrorCode` enum, 탭 들여쓰기). 달라진 점은 보고서에 "deviation"으로 적는다.
+- Docker가 없으므로 local과 test는 H2(PostgreSQL 모드)를 쓴다. PostGIS 타입은 아직 쓰지 않고 위경도 DOUBLE 컬럼을 쓴다(deviation).
+- 앱은 HTTP 계약만 쓰므로 영향이 없다. 비교 문서는 `docs/reports/github-server-comparison.md`.
+
 ## 역할
 나(메인 세션)는 **오케스트레이터**다. 계획, 작업 분배, 결과 통합, 사용자 보고를 맡고 코드를 직접 대량으로 쓰지 않는다. 작업은 `general-purpose` 에이전트에게 역할과 규칙을 프롬프트로 적어 맡긴다.
 - backend: `backend/` 안의 API 구현. 도메인 패키지 `auth, user, place, completion, point, ranking`
