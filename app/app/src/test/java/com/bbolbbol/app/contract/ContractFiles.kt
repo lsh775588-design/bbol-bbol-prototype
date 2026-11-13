@@ -45,6 +45,8 @@ data class GoldenRequest(
     val query: Map<String, String>,
     val requiredQuery: List<String>,
     val body: JsonObject?,
+    /** JSON 본문이 없는 업로드: {part, contentTypes, maxBytes} */
+    val multipart: JsonObject? = null,
 ) {
     val label get() = "[$method $path]"
 }
@@ -78,6 +80,7 @@ object ContractFiles {
                 query = o.getValue("query").jsonObject.mapValues { it.value.jsonPrimitive.content },
                 requiredQuery = o.getValue("requiredQuery").jsonArray.map { it.jsonPrimitive.content },
                 body = o["body"]?.jsonObject,
+                multipart = o["multipart"]?.jsonObject,
             )
         }
 
