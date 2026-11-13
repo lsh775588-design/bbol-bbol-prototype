@@ -65,6 +65,7 @@ import com.bbolbbol.app.ui.auth.AuthRoutes
 import com.bbolbbol.app.ui.auth.KakaoLoginViewModel
 import com.bbolbbol.app.ui.auth.LoginExtras
 import com.bbolbbol.app.ui.auth.authFlowDestinations
+import com.bbolbbol.app.ui.auth.checkOnboardingOnStart
 
 object Routes {
     const val LOGIN = "login"
@@ -119,6 +120,11 @@ fun AppNav(container: AppContainer) {
             route == AuthRoutes.SIGNUP_FLOW || route == AuthRoutes.PASSWORD_RESET
         if (loggedIn && preLogin) nav.resetTo(if (onboardingRequired) AuthRoutes.ONBOARDING else Routes.HOME)
         if (!loggedIn && route != null && !preLogin) nav.resetTo(Routes.LOGIN)
+    }
+
+    // 앱 시작 시 저장된 토큰이 있으면 온보딩 완료 여부를 한 번 확인한다(실패해도 진입을 막지 않는다).
+    LaunchedEffect(Unit) {
+        if (checkOnboardingOnStart(container.userRepository, container.session)) nav.navigate(AuthRoutes.ONBOARDING)
     }
 
     Scaffold(

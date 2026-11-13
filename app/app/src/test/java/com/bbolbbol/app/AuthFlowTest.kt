@@ -493,6 +493,44 @@ class AuthFlowTest {
         assertNull(fx.session.refreshToken)
     }
 
+    // ---------------- 시작 시 온보딩 확인 ----------------
+
+    private fun startCheck() = runBlocking {
+        com.bbolbbol.app.ui.auth.checkOnboardingOnStart(UserRepository(fx.api), fx.session)
+    }
+
+    @Test
+    fun startupCheckRoutesToOnboardingWhenIncomplete() {
+        fx.session.saveTokens("a", "r")
+        fx.route("/users/me", 200, Json.ok(ME_EMAIL))
+        assertTrue(startCheck())
+        assertTrue(fx.session.onboardingRequired.value)
+    }
+
+    @Test
+    fun startupCheckDoesNothingWhenCompletedOrLoggedOut() {
+        fx.route("/users/me", 200, Json.ok(ME_EMAIL.replace("false", "true")))
+        assertFalse(startCheck()) // 로그아웃 상태: 서버를 부르지 않는다
+        assertEquals(0, fx.server.requestCount)
+        fx.session.saveTokens("a", "r")
+        assertFalse(startCheck())
+        assertFalse(fx.session.onboardingRequired.value)
+        assertTrue(fx.session.loggedIn.value)
+    }
+
+    @Test
+    fun startupCheckFailureNeverBlocksOrChangesSession() {
+        fx.session.saveTokens("a", "r")
+        fx.route("/users/me", 503, Json.error("COMMON500"))
+        assertFalse(startCheck())
+        fx.route("/users/me", 401, Json.error("COMMON401"))
+        assertFalse(startCheck())
+        fx.server.shutdown() // 네트워크 오류
+        assertFalse(startCheck())
+        assertFalse(fx.session.onboardingRequired.value)
+        assertTrue(fx.session.loggedIn.value)
+    }
+
     // ---------------- 오류 문구 ----------------
 
     @Test
