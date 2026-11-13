@@ -1,0 +1,9 @@
+{
+  "method": "GET",
+  "path": "/rankings/streaks",
+  "auth": true,
+  "query": {
+    "size": 10
+  },
+  "requiredQuery": []
+}

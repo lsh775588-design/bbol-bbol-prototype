@@ -1,0 +1,15 @@
+{
+  "endpoint": "POST /auth/email-verifications",
+  "case": "success",
+  "httpStatus": 200,
+  "code": "COMMON200",
+  "shape": {
+    "$": "object",
+    "$.code": "string",
+    "$.data": "object",
+    "$.data.expiresIn": "integer",
+    "$.data.resendAvailableIn": "integer",
+    "$.message": "string",
+    "$.success": "boolean"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "endpoint": "POST /auth/kakao",
+  "case": "error-KAKAO401",
+  "httpStatus": 401,
+  "code": "KAKAO401",
+  "shape": {
+    "$": "object",
+    "$.code": "string",
+    "$.data": "null",
+    "$.message": "string",
+    "$.success": "boolean"
+  }
+}

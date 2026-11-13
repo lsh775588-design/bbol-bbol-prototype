@@ -1,0 +1,17 @@
+{
+  "endpoint": "POST /completions/{completionId}/photo",
+  "case": "success",
+  "httpStatus": 201,
+  "code": "COMMON201",
+  "shape": {
+    "$": "object",
+    "$.code": "string",
+    "$.data": "object",
+    "$.data.bonusPoint": "integer",
+    "$.data.completionId": "integer",
+    "$.data.photoUrl": "string",
+    "$.data.totalPoint": "integer",
+    "$.message": "string",
+    "$.success": "boolean"
+  }
+}

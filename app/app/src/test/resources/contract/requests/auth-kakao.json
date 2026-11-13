@@ -1,0 +1,10 @@
+{
+  "method": "POST",
+  "path": "/auth/kakao",
+  "auth": false,
+  "query": {},
+  "requiredQuery": [],
+  "body": {
+    "kakaoAccessToken": "DEV-KAKAO|9001|contract-k@example.com|카카오계약"
+  }
+}

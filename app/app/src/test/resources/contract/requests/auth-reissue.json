@@ -1,0 +1,10 @@
+{
+  "method": "POST",
+  "path": "/auth/reissue",
+  "auth": false,
+  "query": {},
+  "requiredQuery": [],
+  "body": {
+    "refreshToken": "refresh-placeholder"
+  }
+}

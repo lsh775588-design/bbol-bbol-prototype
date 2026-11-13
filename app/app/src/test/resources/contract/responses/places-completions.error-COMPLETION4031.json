@@ -1,0 +1,13 @@
+{
+  "endpoint": "POST /places/{placeId}/completions",
+  "case": "error-COMPLETION4031",
+  "httpStatus": 403,
+  "code": "COMPLETION4031",
+  "shape": {
+    "$": "object",
+    "$.code": "string",
+    "$.data": "null",
+    "$.message": "string",
+    "$.success": "boolean"
+  }
+}

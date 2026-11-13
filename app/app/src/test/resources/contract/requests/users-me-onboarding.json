@@ -1,0 +1,7 @@
+{
+  "method": "GET",
+  "path": "/users/me/onboarding",
+  "auth": true,
+  "query": {},
+  "requiredQuery": []
+}
