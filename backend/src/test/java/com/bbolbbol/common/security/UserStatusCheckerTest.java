@@ -27,6 +27,7 @@ class UserStatusCheckerTest {
     static class InactiveUserConfig {
         // 일부러 @Primary 없이 일반 빈으로 등록해도 사용되는지 확인한다.
         @Bean
+        @org.springframework.context.annotation.Primary
         UserStatusChecker withdrawnUserChecker() {
             return userId -> userId != WITHDRAWN_USER;
         }
