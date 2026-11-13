@@ -5,6 +5,13 @@ import android.content.Context
 import com.bbolbbol.app.data.api.ApiJson
 import com.bbolbbol.app.data.api.AuthInterceptor
 import com.bbolbbol.app.data.api.BbolApi
+import com.bbolbbol.app.data.api.StatsApi
+import com.bbolbbol.app.data.repository.PhotoRepository
+import com.bbolbbol.app.data.repository.RankingRepository
+import com.bbolbbol.app.data.repository.StatsRepository
+import com.bbolbbol.app.ui.photo.AndroidPhotoPrepareService
+import com.bbolbbol.app.ui.photo.PhotoPrepareService
+import com.bbolbbol.app.ui.photo.installPhotoImageLoader
 import com.bbolbbol.app.data.local.AuthSession
 import com.bbolbbol.app.data.local.EncryptedTokenStore
 import com.bbolbbol.app.data.repository.AuthRepository
@@ -24,24 +31,29 @@ import java.util.concurrent.TimeUnit
 class AppContainer(context: Context) {
     val session = AuthSession(EncryptedTokenStore(context))
 
-    private val client = OkHttpClient.Builder()
+    val client = OkHttpClient.Builder()
         .addInterceptor(AuthInterceptor(session))
         .connectTimeout(10, TimeUnit.SECONDS)
         .readTimeout(15, TimeUnit.SECONDS)
         .build()
 
-    private val api: BbolApi = Retrofit.Builder()
+    private val retrofit: Retrofit = Retrofit.Builder()
         .baseUrl(BuildConfig.API_BASE_URL)
         .client(client)
         .addConverterFactory(ApiJson.asConverterFactory("application/json".toMediaType()))
         .build()
-        .create(BbolApi::class.java)
+    private val api: BbolApi = retrofit.create(BbolApi::class.java)
+    private val statsApi: StatsApi = retrofit.create(StatsApi::class.java)
 
     val authRepository = AuthRepository(api, session)
     val userRepository = UserRepository(api)
     val placeRepository = PlaceRepository(api)
     val completionRepository = CompletionRepository(api)
     val pointRepository = PointRepository(api)
+    val photoRepository = PhotoRepository(statsApi)
+    val statsRepository = StatsRepository(statsApi)
+    val rankingRepository = RankingRepository(statsApi)
+    val photoPrepareService: PhotoPrepareService = AndroidPhotoPrepareService(context.applicationContext.contentResolver)
 }
 
 class BbolApplication : Application() {
@@ -51,6 +63,7 @@ class BbolApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         container = AppContainer(this)
+        installPhotoImageLoader(this, container.client, container.session.loggedIn)
         // osmdroid: OSM 타일 서버 정책상 User-Agent 필수. 캐시는 앱 전용 캐시 폴더(저장소 권한 불필요).
         Configuration.getInstance().apply {
             userAgentValue = packageName

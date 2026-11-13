@@ -322,13 +322,8 @@ private fun ArrivalDialog(outcome: ArrivalOutcome, onDismiss: () -> Unit) {
                     Text(r.placeName, style = MaterialTheme.typography.titleMedium)
                     if (r.isFirstVisit) Text("첫 방문이에요", color = MaterialTheme.colorScheme.primary)
                     Text("${r.earnedPoint}P를 받았어요. 총 ${r.totalPoint}P")
-                    if (r.photoBonusPoint > 0) {
-                        Text(
-                            "사진 보너스는 준비 중이에요",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.secondary,
-                        )
-                    }
+                    Spacer(Modifier.height(12.dp))
+                    com.bbolbbol.app.ui.photo.ArrivalPhotoSection(r)
                 }
                 is ArrivalOutcome.Error -> Text(outcome.message)
             }

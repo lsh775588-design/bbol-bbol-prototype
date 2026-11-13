@@ -13,6 +13,7 @@ coroutines = "1.10.2"
 securityCrypto = "1.1.0-alpha06"
 osmdroid = "6.1.20"
 junit = "4.13.2"
+coil = "3.3.0"
 
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
@@ -35,6 +36,8 @@ kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serializa
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
 osmdroid = { module = "org.osmdroid:osmdroid-android", version.ref = "osmdroid" }
+coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
+coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coil" }
 junit = { module = "junit:junit", version.ref = "junit" }
 
 [plugins]
