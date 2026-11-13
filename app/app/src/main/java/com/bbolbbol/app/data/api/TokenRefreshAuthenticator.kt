@@ -15,8 +15,8 @@ import kotlin.concurrent.withLock
  * - single-flight: 재발급은 락 안에서만 일어난다. 락을 기다린 요청은 "실패한 요청이 쓴 access token"과
  *   "지금 저장된 access token"을 비교해서, 이미 바뀌었으면(다른 요청이 재발급을 끝냄) 재발급 없이 새 토큰으로 재시도만 한다.
  * - 루프 없음: 이미 재시도한 응답(priorResponse가 있음)이 또 401이면 포기한다. 재발급 호출은 이 Authenticator가 없는 별도 클라이언트로 보낸다.
- * - 재발급 실패(AUTH4012 등 서버 거절, 네트워크 오류)는 토큰을 모두 지운다 -> AuthSession.loggedIn=false -> 로그인 화면.
- *   (네트워크 오류에도 지우는 것은 팀 지시이고, 더 너그러운 정책은 보고서 주의점에 적었다.)
+ * - 서버가 refresh를 거절(AUTH4012 등 4xx)하면 토큰을 모두 지운다 -> AuthSession.loggedIn=false -> 로그인 화면.
+ *   네트워크 오류, 타임아웃, 5xx는 토큰을 유지하고 요청만 실패시킨다.
  * - 재발급 중 서버의 20초 유예(옛 refresh 재사용 허용)가 있어도 앱은 옛 refresh를 두 번 보내지 않도록 만든다.
  */
 class TokenRefreshAuthenticator(
@@ -45,21 +45,42 @@ class TokenRefreshAuthenticator(
                 session.clear()
                 return null
             }
-            val renewed = reissue(refresh)
-            if (renewed == null) {
-                session.clear()
-                return null
+            when (val outcome = reissue(refresh)) {
+                is Outcome.Renewed -> {
+                    session.saveTokens(outcome.tokens.accessToken, outcome.tokens.refreshToken)
+                    return retryWith(response.request, outcome.tokens.accessToken)
+                }
+                // 서버가 refresh를 거절했다(AUTH4012 등). 다시 로그인해야 한다.
+                Outcome.Rejected -> {
+                    session.clear()
+                    return null
+                }
+                // 네트워크 오류, 타임아웃, 5xx: 토큰은 그대로 두고 이 요청만 실패시킨다(오프라인에서 로그아웃되지 않게).
+                Outcome.Transient -> return null
             }
-            session.saveTokens(renewed.accessToken, renewed.refreshToken)
-            return retryWith(response.request, renewed.accessToken)
         }
     }
 
-    private fun reissue(refreshToken: String): ReissueResponse? = try {
+    private sealed interface Outcome {
+        data class Renewed(val tokens: ReissueResponse) : Outcome
+        data object Rejected : Outcome
+        data object Transient : Outcome
+    }
+
+    private fun reissue(refreshToken: String): Outcome = try {
         val r = reissueApi.reissue(ReissueRequest(refreshToken)).execute()
-        r.body()?.takeIf { r.isSuccessful }?.data?.takeIf { it.accessToken.isNotEmpty() && it.refreshToken.isNotEmpty() }
+        val tokens = r.body()?.takeIf { r.isSuccessful }?.data
+            ?.takeIf { it.accessToken.isNotEmpty() && it.refreshToken.isNotEmpty() }
+        when {
+            tokens != null -> Outcome.Renewed(tokens)
+            // 4xx(요청 시간 초과 408, 제한 429 제외)는 서버의 거절. 그 밖(5xx, 빈 본문)은 일시 오류로 본다.
+            r.code() in 400..499 && r.code() != 408 && r.code() != 429 -> Outcome.Rejected
+            else -> Outcome.Transient
+        }
     } catch (e: IOException) {
-        null
+        Outcome.Transient
+    } catch (e: RuntimeException) {
+        Outcome.Transient // 본문 파싱 실패 등
     }
 
     private fun retryWith(request: Request, token: String): Request =
