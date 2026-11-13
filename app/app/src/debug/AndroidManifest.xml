@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 개발용 HTTP(10.0.2.2)는 debug 빌드에서만 허용한다. release에는 이 설정이 없다. -->
+    <application android:networkSecurityConfig="@xml/network_security_config" />
+</manifest>
