@@ -217,6 +217,28 @@ class ReissueTest {
     }
 
     @Test
+    fun otherAuthPathsNeverCarryBearerToken() {
+        val extra = Retrofit.Builder()
+            .baseUrl(server.url("/"))
+            .client(OkHttpClient.Builder().addInterceptor(AuthInterceptor(session, clearOnUnauthorized = false)).build())
+            .addConverterFactory(ApiJson.asConverterFactory("application/json".toMediaType()))
+            .build()
+            .create(com.bbolbbol.app.data.api.AuthExtraApi::class.java)
+        runBlocking {
+            extra.sendCode(com.bbolbbol.app.data.api.EmailSendRequest("a@b.com", "SIGNUP"))
+            extra.confirmCode(com.bbolbbol.app.data.api.EmailConfirmRequest("a@b.com", "SIGNUP", "123456"))
+            extra.passwordReset(com.bbolbbol.app.data.api.PasswordResetRequest("t", "pw"))
+            extra.kakao(com.bbolbbol.app.data.api.KakaoLoginRequest("k"))
+            api.login(com.bbolbbol.app.data.api.LoginRequest("a@b.com", "pw"))
+            api.signup(com.bbolbbol.app.data.api.SignupRequest("t", "pw", "nn"))
+        }
+        repeat(6) {
+            val r = server.takeRequest()
+            assertNull(r.path, r.getHeader("Authorization"))
+        }
+    }
+
+    @Test
     fun legacyInterceptorStillClearsOnAuth401WhenAskedTo() = runBlocking {
         val legacy = Retrofit.Builder()
             .baseUrl(server.url("/"))
