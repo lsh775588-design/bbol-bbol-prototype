@@ -21,6 +21,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
@@ -53,13 +54,15 @@ fun PointHistoryScreen(vm: PointHistoryViewModel, onBack: () -> Unit) {
 
 @Composable
 fun ActivityLogScreen(vm: ActivityLogViewModel, onBack: () -> Unit) {
+    val upload = com.bbolbbol.app.ui.photo.rememberPhotoUploadViewModel()
+    val statuses by upload.statuses.collectAsState()
+    var target by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<Long?>(null) }
+    val pick = com.bbolbbol.app.ui.photo.rememberPhotoPicker { uri -> target?.let { upload.upload(it, uri) } }
     PagedListScreen("활동 일지", "아직 도착 인증한 장소가 없어요.", vm, onBack) { c: CompletionLogItem ->
-        ListRow(
-            category = c.category,
-            title = c.placeName,
-            subtitle = "${Formatters.categoryName(c.category)} · ${Formatters.dateTime(c.completedAt)}",
-            points = c.earnedPoint,
-        )
+        com.bbolbbol.app.ui.photo.ActivityLogRow(c, statuses[c.completionId], onAddPhoto = {
+            target = c.completionId
+            pick()
+        })
     }
 }
 

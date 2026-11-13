@@ -6,6 +6,7 @@ import com.bbolbbol.app.data.api.ApiResult
 object ErrorMessages {
     const val NETWORK = "서버에 연결할 수 없어요. 네트워크 상태를 확인해 주세요."
     const val UNKNOWN = "알 수 없는 오류가 발생했어요. 잠시 후 다시 시도해 주세요."
+    private const val FILE_TOO_LARGE = "사진 용량이 너무 커요(최대 10MB). 다른 사진을 골라 주세요."
     private const val SERVER = "서버에 문제가 생겼어요. 잠시 후 다시 시도해 주세요."
 
     private val byCode = mapOf(
@@ -22,6 +23,12 @@ object ErrorMessages {
         "COMPLETION4002" to "GPS 정확도가 낮아요. 실외로 이동해서 다시 시도해 주세요.",
         "COMPLETION4003" to "모의 위치는 사용할 수 없어요.",
         "COMPLETION409" to "오늘 이미 인증했어요. 내일 다시 도전해 보세요.",
+        "COMPLETION403" to "내 인증 기록이 아니라서 사진을 올릴 수 없어요.",
+        "COMPLETION404" to "인증 기록을 찾을 수 없어요.",
+        "COMPLETION4004" to "사진 보너스 마감 시간(인증 후 1시간)이 지났어요.",
+        "COMPLETION4091" to "이미 사진을 올렸어요. 보너스는 한 번만 받을 수 있어요.",
+        "FILE4001" to "사진 파일이 없거나 지원하지 않는 형식이에요. JPEG 또는 PNG 사진을 골라 주세요.",
+        "FILE413" to FILE_TOO_LARGE,
         "COMMON400" to "입력값을 다시 확인해 주세요.",
         "COMMON404" to "요청한 경로를 찾을 수 없어요.",
         "COMMON500" to SERVER,
@@ -38,7 +45,7 @@ object ErrorMessages {
             if (result.code == "COMMON400" && !first.isNullOrBlank()) {
                 first
             } else {
-                byCode[result.code] ?: if (result.httpStatus >= 500) SERVER else UNKNOWN
+                byCode[result.code] ?: if (result.httpStatus == 413) FILE_TOO_LARGE else if (result.httpStatus >= 500) SERVER else UNKNOWN
             }
         }
     }

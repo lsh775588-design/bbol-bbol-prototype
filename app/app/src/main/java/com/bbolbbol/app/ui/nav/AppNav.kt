@@ -51,6 +51,9 @@ import com.bbolbbol.app.ui.me.MeScreen
 import com.bbolbbol.app.ui.me.MeViewModel
 import com.bbolbbol.app.ui.me.RecentActivityViewModel
 import com.bbolbbol.app.ui.ranking.RankingScreen
+import com.bbolbbol.app.ui.ranking.RankingViewModel
+import com.bbolbbol.app.ui.stats.StatsScreen
+import com.bbolbbol.app.ui.stats.StatsViewModel
 import com.bbolbbol.app.ui.recommend.RecommendScreen
 import com.bbolbbol.app.ui.recommend.RecommendViewModel
 import com.bbolbbol.app.ui.signup.SignupScreen
@@ -66,6 +69,7 @@ object Routes {
     const val ME = "me"
     const val POINT_HISTORY = "point-history"
     const val ACTIVITY_LOG = "activity-log"
+    const val STATS = "stats"
     const val RECOMMEND = "recommend/{lat}/{lng}"
 
     fun recommend(lat: Double, lng: Double) = "recommend/$lat/$lng"
@@ -177,7 +181,14 @@ fun AppNav(container: AppContainer) {
                     onPickedConsumed = { pendingPlaceId = null },
                 )
             }
-            composable(Routes.RANKING) { RankingScreen() }
+            composable(Routes.RANKING) {
+                val vm: RankingViewModel = viewModel(factory = factory { RankingViewModel(container.rankingRepository) })
+                RankingScreen(vm)
+            }
+            composable(Routes.STATS) {
+                val vm: StatsViewModel = viewModel(factory = factory { StatsViewModel(container.statsRepository) })
+                StatsScreen(vm, onBack = { nav.popBackStack() })
+            }
             composable(Routes.ME) {
                 val vm: MeViewModel = viewModel(
                     factory = factory {
@@ -192,6 +203,7 @@ fun AppNav(container: AppContainer) {
                     recentVm,
                     onPointHistory = { nav.navigate(Routes.POINT_HISTORY) },
                     onActivityLog = { nav.navigate(Routes.ACTIVITY_LOG) },
+                    onStats = { nav.navigate(Routes.STATS) },
                 )
             }
             composable(Routes.POINT_HISTORY) {
