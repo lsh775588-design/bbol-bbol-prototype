@@ -1,0 +1,25 @@
+{
+  "endpoint": "GET /users/me/point-histories",
+  "case": "success",
+  "httpStatus": 200,
+  "code": "COMMON200",
+  "shape": {
+    "$": "object",
+    "$.code": "string",
+    "$.data": "object",
+    "$.data.hasNext": "boolean",
+    "$.data.histories": "array",
+    "$.data.histories[]": "object",
+    "$.data.histories[].category": "string",
+    "$.data.histories[].completionId": "integer",
+    "$.data.histories[].createdAt": "datetime",
+    "$.data.histories[].historyId": "integer",
+    "$.data.histories[].placeId": "integer",
+    "$.data.histories[].placeName": "string",
+    "$.data.histories[].point": "integer",
+    "$.data.histories[].type": "string",
+    "$.data.nextCursor": "integer|null",
+    "$.message": "string",
+    "$.success": "boolean"
+  }
+}

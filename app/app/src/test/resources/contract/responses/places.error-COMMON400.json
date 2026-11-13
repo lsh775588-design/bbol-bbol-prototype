@@ -1,0 +1,17 @@
+{
+  "endpoint": "GET /places",
+  "case": "error-COMMON400",
+  "httpStatus": 400,
+  "code": "COMMON400",
+  "shape": {
+    "$": "object",
+    "$.code": "string",
+    "$.data": "object",
+    "$.data.errors": "array",
+    "$.data.errors[]": "object",
+    "$.data.errors[].field": "string",
+    "$.data.errors[].reason": "string",
+    "$.message": "string",
+    "$.success": "boolean"
+  }
+}

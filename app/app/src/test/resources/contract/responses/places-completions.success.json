@@ -1,0 +1,22 @@
+{
+  "endpoint": "POST /places/{placeId}/completions",
+  "case": "success",
+  "httpStatus": 201,
+  "code": "COMMON201",
+  "shape": {
+    "$": "object",
+    "$.code": "string",
+    "$.data": "object",
+    "$.data.completedAt": "datetime",
+    "$.data.completionId": "integer",
+    "$.data.earnedPoint": "integer",
+    "$.data.isFirstVisit": "boolean",
+    "$.data.photoBonusPoint": "integer",
+    "$.data.photoDeadline": "datetime|null",
+    "$.data.placeId": "integer",
+    "$.data.placeName": "string",
+    "$.data.totalPoint": "integer",
+    "$.message": "string",
+    "$.success": "boolean"
+  }
+}

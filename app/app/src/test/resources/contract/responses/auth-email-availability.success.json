@@ -1,0 +1,15 @@
+{
+  "endpoint": "GET /auth/email-availability",
+  "case": "success",
+  "httpStatus": 200,
+  "code": "COMMON200",
+  "shape": {
+    "$": "object",
+    "$.code": "string",
+    "$.data": "object",
+    "$.data.available": "boolean",
+    "$.data.reason": "string|null",
+    "$.message": "string",
+    "$.success": "boolean"
+  }
+}

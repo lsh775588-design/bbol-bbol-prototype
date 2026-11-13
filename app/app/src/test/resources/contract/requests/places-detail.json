@@ -1,0 +1,7 @@
+{
+  "method": "GET",
+  "path": "/places/{placeId}",
+  "auth": true,
+  "query": {},
+  "requiredQuery": []
+}

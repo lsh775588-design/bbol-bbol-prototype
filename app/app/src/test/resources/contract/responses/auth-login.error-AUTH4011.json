@@ -1,0 +1,13 @@
+{
+  "endpoint": "POST /auth/login",
+  "case": "error-AUTH4011",
+  "httpStatus": 401,
+  "code": "AUTH4011",
+  "shape": {
+    "$": "object",
+    "$.code": "string",
+    "$.data": "null",
+    "$.message": "string",
+    "$.success": "boolean"
+  }
+}

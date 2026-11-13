@@ -1,0 +1,13 @@
+{
+  "method": "GET",
+  "path": "/users/me/completions",
+  "auth": true,
+  "query": {
+    "from": "2026-01-01",
+    "to": "2026-12-31",
+    "category": "HERITAGE",
+    "cursor": 9000000000000000000,
+    "size": 20
+  },
+  "requiredQuery": []
+}

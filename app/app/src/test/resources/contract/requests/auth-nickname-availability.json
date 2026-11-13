@@ -1,0 +1,9 @@
+{
+  "method": "GET",
+  "path": "/auth/nickname-availability",
+  "auth": false,
+  "query": {
+    "nickname": "계약가입"
+  },
+  "requiredQuery": ["nickname"]
+}

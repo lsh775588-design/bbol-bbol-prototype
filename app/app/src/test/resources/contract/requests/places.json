@@ -1,0 +1,13 @@
+{
+  "method": "GET",
+  "path": "/places",
+  "auth": true,
+  "query": {
+    "lat": 37.5796,
+    "lng": 126.977,
+    "radius": 500,
+    "category": "HERITAGE",
+    "size": 10
+  },
+  "requiredQuery": ["lat", "lng"]
+}

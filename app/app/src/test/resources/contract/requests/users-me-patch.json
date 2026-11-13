@@ -1,0 +1,10 @@
+{
+  "method": "PATCH",
+  "path": "/users/me",
+  "auth": true,
+  "query": {},
+  "requiredQuery": [],
+  "body": {
+    "nickname": "새이름"
+  }
+}

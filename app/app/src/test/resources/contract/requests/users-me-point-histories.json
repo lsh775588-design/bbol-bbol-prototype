@@ -1,0 +1,11 @@
+{
+  "method": "GET",
+  "path": "/users/me/point-histories",
+  "auth": true,
+  "query": {
+    "cursor": 9000000000000000000,
+    "size": 20,
+    "type": "QUEST_COMPLETE"
+  },
+  "requiredQuery": []
+}
