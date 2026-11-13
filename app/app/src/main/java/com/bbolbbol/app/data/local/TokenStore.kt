@@ -43,12 +43,28 @@ class EncryptedTokenStore(context: Context) : TokenStore {
     private fun SharedPreferences.Editor.putOrRemove(key: String, value: String?) =
         if (value == null) remove(key) else putString(key, value)
 
-    private companion object {
-        const val FILE = "bbol_secure_tokens"
-        const val KEY_ACCESS = "access"
-        const val KEY_REFRESH = "refresh"
+    companion object {
+        private const val FILE = "bbol_secure_tokens"
+        private const val KEY_ACCESS = "access"
+        private const val KEY_REFRESH = "refresh"
 
-        fun create(context: Context): SharedPreferences {
+        /**
+         * 앱이 쓰는 저장소. Keystore 키가 깨져도(백업 복원, OS 업데이트) 앱이 죽지 않고
+         * 저장 파일과 마스터 키를 지운 뒤 빈 저장소(= 로그아웃 상태)로 다시 만든다.
+         */
+        fun createResilient(context: Context): TokenStore =
+            ResilientTokenStore(open = { EncryptedTokenStore(context) }, wipe = { wipe(context) })
+
+        /** 깨진 저장 파일과 Keystore 마스터 키 항목을 지운다. 실패는 무시한다(다시 만들 때 드러난다). */
+        fun wipe(context: Context) {
+            runCatching { context.applicationContext.deleteSharedPreferences(FILE) }
+            runCatching {
+                java.security.KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
+                    .deleteEntry(MasterKey.DEFAULT_MASTER_KEY_ALIAS)
+            }
+        }
+
+        private fun create(context: Context): SharedPreferences {
             val masterKey = MasterKey.Builder(context).setKeyScheme(MasterKey.KeyScheme.AES256_GCM).build()
             return EncryptedSharedPreferences.create(
                 context, FILE, masterKey,
@@ -57,6 +73,52 @@ class EncryptedTokenStore(context: Context) : TokenStore {
             )
         }
     }
+}
+
+/**
+ * 저장소를 열거나 읽고 쓰다가 예외(키 손상 등)가 나면 [wipe] 후 다시 열고, 그래도 안 되면 메모리 저장소로 물러난다.
+ * 실패한 읽기는 null(로그아웃)이다. 예외 메시지에는 토큰이 없지만 어디에도 기록하지 않는다.
+ */
+class ResilientTokenStore(
+    private val open: () -> TokenStore,
+    private val wipe: () -> Unit,
+) : TokenStore {
+    @Volatile private var delegate: TokenStore = openOrWipe()
+
+    /** 복구가 한 번이라도 일어났는가(진단/테스트용). */
+    @Volatile var recovered: Boolean = false
+        private set
+
+    private fun openOrWipe(): TokenStore = try {
+        open()
+    } catch (e: Exception) {
+        recovered = true
+        try {
+            wipe()
+            open()
+        } catch (e2: Exception) {
+            InMemoryTokenStore()
+        }
+    }
+
+    private inline fun <T> guard(onFail: T, op: (TokenStore) -> T): T = try {
+        op(delegate)
+    } catch (e: Exception) {
+        recovered = true
+        runCatching { wipe() }
+        delegate = try { open() } catch (e2: Exception) { InMemoryTokenStore() }
+        onFail
+    }
+
+    override var accessToken: String?
+        get() = guard(null) { it.accessToken }
+        set(value) = guard(Unit) { it.accessToken = value }
+
+    override var refreshToken: String?
+        get() = guard(null) { it.refreshToken }
+        set(value) = guard(Unit) { it.refreshToken = value }
+
+    override fun clear() = guard(Unit) { it.clear() }
 }
 
 /** 로그인 상태의 단일 출처. 토큰 저장/삭제와 "로그인됨" 상태 흐름을 묶는다. */

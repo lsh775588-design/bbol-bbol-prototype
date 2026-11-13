@@ -34,7 +34,7 @@ import java.util.concurrent.TimeUnit
 
 /** 수동 DI. 화면 ViewModel은 여기서 저장소를 가져다 쓴다. */
 class AppContainer(context: Context) {
-    val session = AuthSession(EncryptedTokenStore(context))
+    val session = AuthSession(EncryptedTokenStore.createResilient(context))
 
     // 재발급 호출 전용 클라이언트: 인터셉터/Authenticator가 없어서 재발급이 재발급을 부르지 않는다.
     private val reissueApi: ReissueApi = Retrofit.Builder()
