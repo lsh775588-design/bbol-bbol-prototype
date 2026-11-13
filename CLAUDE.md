@@ -79,7 +79,9 @@
 - 병렬 작업은 `.worktrees/<이름>`(git에서 제외)에서 한다. 서버는 `local` 프로파일로 8080이 아닌 비어 있는 포트에 띄우고, 앱은 `-PapiBaseUrl=http://10.0.2.2:<포트>/`로 빌드한다.
 - **서버 이식 완료(2026-11-14):** 사용자, 장소, 샘플 데이터를 팀 저장소 스택(Kotlin)으로 옮겨 `C:\dev\bbolbbol\server`의 `port/integration`에서 합쳤다. 테스트 170개 통과. 보고서는 `docs/reports/port-1-server.md`. 팀 저장소에는 올리지 않았다. Java `backend/`는 참고용이다.
 - 에뮬레이터는 사용자가 다른 프로젝트 확인을 위해 종료를 요청해서 **꺼 둔 상태**다. 사용자가 "써도 돼"라고 하기 전에는 켜지 않는다.
-- 다음: 2단계(도착 인증, 포인트, recommendations CURATED만)를 팀 스택에서 → review → 3단계 → 최종 보고서. 에이전트에는 `name`으로 이름표를 붙인다.
+- **2단계 완료(2026-11-14):** 서버(`C:\dev\bbolbbol\server`의 `port/integration`)에 도착 인증, 포인트(내 포인트, 내역, 활동 일지), 추천(CURATED)을 추가했고 review(조건부 통과)의 지적을 수정했다. 서버 테스트 226개 통과. 앱(`feat/2-integration`)에 도착 인증, 포인트 요약, 포인트 내역, 활동 일지, 추천 화면을 추가했고 단위 테스트 48개와 빌드 통과. 보고서는 `docs/reports/stage-2.md`. 앱 2단계 화면은 에뮬레이터에서 확인하지 못했다.
+- **3단계:** 쟁점 2~8에 대한 사용자 결정이 없어 구현할 API가 없다. 남은 API(통계, 랭킹, 사진 업로드, 이메일 인증, 재발급, 탈퇴, 카카오, 온보딩)는 최종 보고서에 목록으로 남긴다.
+- 다음: 최종 보고서(`docs/reports/final-report.md`: 구현한 기능, 사용 기술, Notion과 달라진 점) 작성. 프로토타입 이미지를 받으면 앱 UI를 맞춘다(`docs/design/`). 에이전트에는 `name`으로 이름표를 붙인다.
 - 사용자가 "끝까지 진행"을 지시했다. push, PR, 병합 금지와 쟁점 2~8 API 보류는 그대로다. 앱 프로젝트 생성(Kotlin + Compose + Retrofit)은 1단계에 포함해도 된다는 승인을 받았다. 마지막에 `docs/reports/final-report.md`(구현 기능, 사용 기술, Notion과 달라진 점)를 쓴다.
 - 결정 대기(가정으로 진행 중): COMMON404/405/415/500 유지 여부, 성공 응답 기본 message 문구, H2 `runtimeOnly` 분리(배포 전), 0-3·0-4 보고서의 OPEN 항목들.
 - 새 세션은 `git branch --show-current`와 `git log --oneline`으로 현재 위치를 확인한 뒤 이 목록의 다음 단계부터 이어간다. 진행 중인 에이전트가 있는지(`git status`가 깨끗한지)도 확인한다.
