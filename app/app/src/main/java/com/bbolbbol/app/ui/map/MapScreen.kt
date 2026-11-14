@@ -262,13 +262,13 @@ private fun MapContent(
             shape = CircleShape,
             color = Color.White,
             shadowElevation = 6.dp,
-            modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = 20.dp).size(48.dp),
+            modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = 32.dp).size(48.dp),
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(Icons.Filled.MyLocation, contentDescription = "내 위치로", tint = BbolColors.Violet)
             }
         }
-        Box(Modifier.align(Alignment.BottomCenter).padding(12.dp).padding(end = 40.dp)) {
+        Box(Modifier.align(Alignment.BottomCenter).padding(12.dp).padding(bottom = 20.dp, end = 40.dp)) {
             when {
                 s.error != null -> MapNotice {
                     Text(s.error!!, color = MaterialTheme.colorScheme.error, modifier = Modifier.weight(1f, fill = false))
@@ -510,18 +510,20 @@ private fun OsmMap(
     val fitKey = if (fitToPlaces) places.size else -1
     LaunchedEffect(lat, lng, zoom, recenterNonce, fitKey) {
         if (fitToPlaces && places.size >= 2) {
-            val box = BoundingBox.fromGeoPointsSafe(places.map { GeoPoint(it.lat, it.lng) })
+            val raw = BoundingBox.fromGeoPointsSafe(places.map { GeoPoint(it.lat, it.lng) })
+            // 위쪽 제목/칩 영역에 핀이 가려지지 않도록 북쪽을 조금 더 넓힌다.
+            val box = BoundingBox(raw.latNorth + raw.latitudeSpan * 0.1, raw.lonEast, raw.latSouth, raw.lonWest)
             mapView.post {
                 if (mapView.width > 0) {
-                    mapView.zoomToBoundingBox(box.increaseByScale(1.25f), false)
-                    val z = mapView.zoomLevelDouble.coerceIn(14.0, 15.5)
+                    mapView.zoomToBoundingBox(box.increaseByScale(1.1f), false)
+                    val z = mapView.zoomLevelDouble.coerceIn(13.5, 15.0)
                     mapView.controller.setZoom(z)
                     mapView.controller.setCenter(box.centerWithDateLine)
                 }
             }
         } else {
             mapView.controller.setZoom(zoom)
-            mapView.controller.animateTo(GeoPoint(lat, lng))
+            if (fitToPlaces) mapView.controller.setCenter(GeoPoint(lat, lng)) else mapView.controller.animateTo(GeoPoint(lat, lng))
         }
     }
     AndroidView(

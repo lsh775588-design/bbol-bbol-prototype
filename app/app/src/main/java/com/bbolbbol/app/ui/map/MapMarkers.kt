@@ -43,8 +43,8 @@ object PinFactory {
 
     private fun draw(d: Float, category: String?, state: PinState, selected: Boolean, hot: Boolean): Bitmap {
         val scale = if (selected) 1.35f else 1f
-        val pinW = 34f * d * scale
-        val pinH = 44f * d * scale
+        val pinW = 40f * d * scale
+        val pinH = 52f * d * scale
         val pad = 8f * d
         val bmp = Bitmap.createBitmap((pinW + pad * 2).toInt(), (pinH + pad * 2).toInt(), Bitmap.Config.ARGB_8888)
         val c = Canvas(bmp)
@@ -166,12 +166,12 @@ class MyLocationDot(private val lat: Double, private val lng: Double, private va
 
 /** 베이스 지도를 옅고 차분하게: 채도를 낮추고 밝게 해서 핀이 눈에 띄게 한다. */
 fun softTileFilter(): ColorMatrixColorFilter {
-    val m = ColorMatrix().apply { setSaturation(0.28f) }
+    val m = ColorMatrix().apply { setSaturation(0.15f) }
     val lift = ColorMatrix(
         floatArrayOf(
-            0.78f, 0f, 0f, 0f, 52f,
-            0f, 0.78f, 0f, 0f, 50f,
-            0f, 0f, 0.78f, 0f, 62f,
+            0.7f, 0f, 0f, 0f, 70f,
+            0f, 0.7f, 0f, 0f, 68f,
+            0f, 0f, 0.7f, 0f, 80f,
             0f, 0f, 0f, 1f, 0f,
         ),
     )
