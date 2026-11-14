@@ -178,6 +178,8 @@ fun AppNav(container: AppContainer) {
                             container.pointRepository,
                             container.placeRepository,
                             container.completionRepository,
+                            container.questBook,
+                            container::currentUserId,
                         )
                     },
                 )
@@ -188,6 +190,7 @@ fun AppNav(container: AppContainer) {
                         nav.switchTab(Routes.MAP)
                     },
                     onOpenRecommend = { lat, lng -> nav.navigate(Routes.recommend(lat, lng)) },
+                    onGoMap = { nav.switchTab(Routes.MAP) },
                     onOpenActivityLog = { nav.navigate(Routes.ACTIVITY_LOG) },
                 )
             }

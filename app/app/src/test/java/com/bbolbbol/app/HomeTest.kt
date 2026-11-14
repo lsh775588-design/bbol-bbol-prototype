@@ -215,7 +215,7 @@ class HomeTest {
         return """{"completions":[$items],"hasNext":false,"nextCursor":null}"""
     }
 
-    private companion object {
+    companion object {
         const val ME =
             """{"userId":1,"email":"a@b.com","nickname":"뽈뽈이","loginType":"EMAIL","onboardingCompleted":false,"createdAt":"2026-11-01T10:00:00"}"""
         const val POINTS = """{"totalPoint":120,"todayPoint":30,"completionCount":4}"""
