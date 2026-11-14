@@ -19,6 +19,8 @@ import com.bbolbbol.app.data.repository.AuthExtraRepository
 import com.bbolbbol.app.ui.auth.createDevTools
 import com.bbolbbol.app.data.local.AuthSession
 import com.bbolbbol.app.data.local.EncryptedTokenStore
+import com.bbolbbol.app.data.local.PrefsQuestStorage
+import com.bbolbbol.app.data.local.QuestBook
 import com.bbolbbol.app.data.repository.AuthRepository
 import com.bbolbbol.app.data.repository.CompletionRepository
 import com.bbolbbol.app.data.repository.PlaceRepository
@@ -73,6 +75,21 @@ class AppContainer(context: Context) {
     val photoRepository = PhotoRepository(statsApi)
     val statsRepository = StatsRepository(statsApi)
     val rankingRepository = RankingRepository(statsApi)
+    val questBook = QuestBook(PrefsQuestStorage(context))
+
+    @Volatile private var cachedUserId: Long? = null
+
+    /** 받은 퀘스트를 사용자별로 나누는 키. 로그아웃하면 비워진다. */
+    suspend fun currentUserId(): Long? = cachedUserId
+        ?: (userRepository.me() as? com.bbolbbol.app.data.api.ApiResult.Success)?.data?.userId?.also { cachedUserId = it }
+
+    init {
+        session.onCleared = {
+            cachedUserId = null
+            questBook.clearAll()
+        }
+    }
+
     val photoPrepareService: PhotoPrepareService = AndroidPhotoPrepareService(context.applicationContext.contentResolver)
 }
 
