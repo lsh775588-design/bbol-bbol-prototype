@@ -61,6 +61,7 @@ fun HomeScreen(
     onOpenPlace: (Long) -> Unit,
     onOpenRecommend: (lat: Double, lng: Double) -> Unit,
     onOpenActivityLog: () -> Unit,
+    onGoMap: () -> Unit = {},
 ) {
     val s by vm.state.collectAsState()
     val context = LocalContext.current
@@ -86,6 +87,11 @@ fun HomeScreen(
         Text("홈", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.padding(horizontal = 20.dp))
         Greeting(s.nickname, Modifier.padding(horizontal = 20.dp), onRetry = vm::loadNickname)
         PointsCard(s.points, Modifier.padding(horizontal = 20.dp), onRetry = vm::loadPoints)
+
+        OngoingQuests(
+            s.ongoing, s.ongoingHasLocation, s.ongoingLoading, Modifier.padding(horizontal = 20.dp),
+            onOpenPlace = onOpenPlace, onAbandon = vm::abandon, onGoMap = onGoMap,
+        )
 
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             SectionHeader(
@@ -279,6 +285,89 @@ fun RecentRow(c: CompletionLogItem, modifier: Modifier = Modifier) {
         Column(horizontalAlignment = Alignment.End) {
             StatusChip("완료", StatusKind.DONE)
             Text("+${c.earnedPoint}P", style = MaterialTheme.typography.labelMedium, color = BbolColors.Violet)
+        }
+    }
+}
+
+/** 프로토타입의 "Ongoing Quests" 카드: 큰 개수, 장소 줄 목록. 비면 안내와 지도 버튼. */
+@Composable
+private fun OngoingQuests(
+    list: List<OngoingQuest>,
+    hasLocation: Boolean,
+    loading: Boolean,
+    modifier: Modifier,
+    onOpenPlace: (Long) -> Unit,
+    onAbandon: (Long) -> Unit,
+    onGoMap: () -> Unit,
+) {
+    BbolCard(modifier) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("진행 중인 퀘스트", style = MaterialTheme.typography.titleMedium)
+                    Row(verticalAlignment = Alignment.Bottom) {
+                        Text(if (loading && list.isEmpty()) "-" else "${list.size}", style = MaterialTheme.typography.headlineMedium, color = BbolColors.Violet)
+                        Text("  개 진행 중", style = MaterialTheme.typography.bodyMedium, color = BbolColors.InkSoft, modifier = Modifier.padding(bottom = 4.dp))
+                    }
+                }
+                Icon(PawIcon, null, tint = BbolColors.PawPink, modifier = Modifier.size(36.dp))
+            }
+            if (list.isEmpty() && loading) {
+                LoadingState()
+            } else if (list.isEmpty()) {
+                Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        "아직 받은 퀘스트가 없어요.\n지도에서 가고 싶은 장소의 퀘스트를 받아 보세요!",
+                        color = BbolColors.InkSoft,
+                        style = MaterialTheme.typography.bodyMedium,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    )
+                    Text(
+                        "지도에서 퀘스트 찾기",
+                        color = Color.White,
+                        style = MaterialTheme.typography.labelLarge,
+                        modifier = Modifier.clip(BbolShapes.Pill).background(BbolColors.Violet)
+                            .clickable(onClick = onGoMap).padding(horizontal = 18.dp, vertical = 9.dp),
+                    )
+                }
+            } else {
+                list.forEach { OngoingRow(it, hasLocation, onOpenPlace, onAbandon) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun OngoingRow(q: OngoingQuest, hasLocation: Boolean, onOpenPlace: (Long) -> Unit, onAbandon: (Long) -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().clip(BbolShapes.Tile).clickable { onOpenPlace(q.placeId) },
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        CategoryTile(q.category, size = 48.dp)
+        Spacer(Modifier.width(12.dp))
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+            Text(q.name, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(
+                listOfNotNull(
+                    Formatters.categoryName(q.category),
+                    if (q.distance != null) Formatters.distance(q.distance) else if (!hasLocation) "위치 권한 필요" else null,
+                    "${q.rewardPoint}P",
+                ).joinToString(" · "),
+                style = MaterialTheme.typography.bodySmall,
+                color = BbolColors.InkSoft,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Spacer(Modifier.width(8.dp))
+        Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            StatusChip("진행 중", StatusKind.IN_PROGRESS)
+            Text(
+                "포기",
+                style = MaterialTheme.typography.labelMedium,
+                color = BbolColors.InkSoft,
+                modifier = Modifier.clip(BbolShapes.Pill).clickable { onAbandon(q.placeId) }.padding(horizontal = 6.dp, vertical = 2.dp),
+            )
         }
     }
 }
