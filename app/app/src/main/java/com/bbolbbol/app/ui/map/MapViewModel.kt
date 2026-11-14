@@ -8,6 +8,7 @@ import com.bbolbbol.app.data.api.CompletionRequest
 import com.bbolbbol.app.data.api.CompletionResponse
 import com.bbolbbol.app.data.api.PlaceDetail
 import com.bbolbbol.app.data.api.PlaceSummary
+import com.bbolbbol.app.data.local.QuestBook
 import com.bbolbbol.app.data.repository.CompletionRepository
 import com.bbolbbol.app.data.repository.PlaceRepository
 import com.bbolbbol.app.util.ErrorMessages
@@ -38,7 +39,16 @@ data class MapUiState(
     val focusLng: Double? = null,
     val arriving: Boolean = false,
     val arrivalOutcome: ArrivalOutcome? = null,
+    /** 내 위치의 오차 반경(미터). 모르면 null. */
+    val accuracy: Float? = null,
+    /** "내 위치로" 버튼을 누를 때마다 늘어서 카메라를 다시 내 위치로 옮긴다. */
+    val recenterNonce: Int = 0,
+    /** 오늘 받은(수락한) 퀘스트의 장소 id. 서버는 모르고 앱에만 있다. */
+    val acceptedIds: Set<Long> = emptySet(),
 ) {
+    /** 지금 열린 장소의 퀘스트를 받았는가. */
+    val detailAccepted get() = detail?.let { it.placeId in acceptedIds && !it.isCompleted } == true
+
     val isBrowse get() = mode == LocationMode.BROWSE
 
     /** 지금 열린 장소를 오늘 이미 인증했는가(상세 응답에 이미 들어 있는 값). */
@@ -69,6 +79,9 @@ const val JONGNO_LNG = 126.9794
 class MapViewModel(
     private val repo: PlaceRepository,
     private val completions: CompletionRepository,
+    /** 받은 퀘스트 기록. null이면 퀘스트 받기 단계 없이 바로 도착 인증을 할 수 있다(테스트용). */
+    private val quests: QuestBook? = null,
+    private val userId: suspend () -> Long? = { null },
 ) : ViewModel() {
     private val _state = MutableStateFlow(MapUiState())
     val state: StateFlow<MapUiState> = _state.asStateFlow()
@@ -83,9 +96,12 @@ class MapViewModel(
 
     fun onLocating() = _state.update { it.copy(mode = LocationMode.LOCATING) }
 
-    fun onLocation(lat: Double, lng: Double) {
+    fun onLocation(lat: Double, lng: Double, accuracy: Float? = null) {
         _state.update {
-            it.copy(mode = LocationMode.MY_LOCATION, lat = lat, lng = lng, focusLat = null, focusLng = null)
+            it.copy(
+                mode = LocationMode.MY_LOCATION, lat = lat, lng = lng, accuracy = accuracy,
+                focusLat = null, focusLng = null, recenterNonce = it.recenterNonce + 1,
+            )
         }
         loadPlaces()
     }
@@ -93,7 +109,10 @@ class MapViewModel(
     /** 권한 거부 또는 위치를 못 얻은 경우. 종로구 중심으로 둘러본다. */
     fun enterBrowseMode() {
         _state.update {
-            it.copy(mode = LocationMode.BROWSE, lat = JONGNO_LAT, lng = JONGNO_LNG, focusLat = null, focusLng = null)
+            it.copy(
+                mode = LocationMode.BROWSE, lat = JONGNO_LAT, lng = JONGNO_LNG, accuracy = null,
+                focusLat = null, focusLng = null, recenterNonce = it.recenterNonce + 1,
+            )
         }
         loadPlaces()
     }
@@ -103,7 +122,37 @@ class MapViewModel(
         loadPlaces()
     }
 
+    /** 받은 퀘스트 목록을 다시 읽는다(날짜가 넘어갔으면 비워진다). */
+    private fun refreshAccepted() {
+        val q = quests ?: return
+        viewModelScope.launch {
+            val id = userId() ?: return@launch
+            _state.update { it.copy(acceptedIds = q.acceptedIds(id)) }
+        }
+    }
+
+    fun acceptQuest(placeId: Long) {
+        val q = quests ?: return
+        val d = _state.value.detail
+        if (d != null && d.placeId == placeId && d.isCompleted) return
+        viewModelScope.launch {
+            val id = userId() ?: return@launch
+            q.accept(id, placeId)
+            _state.update { it.copy(acceptedIds = q.acceptedIds(id)) }
+        }
+    }
+
+    fun cancelQuest(placeId: Long) {
+        val q = quests ?: return
+        viewModelScope.launch {
+            val id = userId() ?: return@launch
+            q.remove(id, placeId)
+            _state.update { it.copy(acceptedIds = q.acceptedIds(id)) }
+        }
+    }
+
     fun loadPlaces() {
+        refreshAccepted()
         val s = _state.value
         loadJob?.cancel()
         _state.update { it.copy(loading = true, error = null) }
@@ -138,10 +187,12 @@ class MapViewModel(
     fun arrive(placeId: Long, fix: ArrivalFix) {
         val s = _state.value
         if (s.isBrowse || s.arriving) return
+        if (quests != null && placeId !in s.acceptedIds) return
         _state.update { it.copy(arriving = true, arrivalOutcome = null) }
         viewModelScope.launch {
             when (val r = completions.complete(placeId, CompletionRequest(fix.lat, fix.lng, fix.accuracy, fix.isMock))) {
                 is ApiResult.Success -> {
+                    quests?.let { q -> userId()?.let { id -> q.remove(id, placeId) } }
                     _state.update { it.copy(arriving = false, arrivalOutcome = ArrivalOutcome.Success(r.data)) }
                     refreshAfterArrival(placeId)
                 }

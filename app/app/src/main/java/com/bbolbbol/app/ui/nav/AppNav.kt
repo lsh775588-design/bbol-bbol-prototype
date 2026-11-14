@@ -193,7 +193,7 @@ fun AppNav(container: AppContainer) {
             }
             composable(Routes.MAP) {
                 val vm: MapViewModel = viewModel(
-                    factory = factory { MapViewModel(container.placeRepository, container.completionRepository) },
+                    factory = factory { MapViewModel(container.placeRepository, container.completionRepository, container.questBook, container::currentUserId) },
                 )
                 MapScreen(
                     vm,

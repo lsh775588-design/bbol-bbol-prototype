@@ -21,7 +21,15 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MyLocation
+import androidx.compose.material3.Icon
+import androidx.compose.ui.graphics.Brush
+import org.osmdroid.util.BoundingBox
+import org.osmdroid.views.overlay.CopyrightOverlay
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -82,8 +90,17 @@ fun MapScreen(
     fun locate() {
         vm.onLocating()
         fetchLocation(context) { loc ->
-            if (loc != null) vm.onLocation(loc.latitude, loc.longitude) else vm.enterBrowseMode()
+            if (loc != null) vm.onLocation(loc.latitude, loc.longitude, loc.accuracy) else vm.enterBrowseMode()
         }
+    }
+
+    // "내 위치로" 버튼: 화면을 바꾸지 않고 위치만 다시 읽어 카메라를 옮긴다.
+    fun recenter() {
+        if (!hasLocationPermission(context)) {
+            vm.enterBrowseMode()
+            return
+        }
+        fetchLocation(context) { loc -> if (loc != null) vm.onLocation(loc.latitude, loc.longitude, loc.accuracy) }
     }
 
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { grants ->
@@ -119,7 +136,7 @@ fun MapScreen(
                 Text("내 위치를 찾는 중이에요")
             }
         }
-        else -> MapContent(vm, onOpenRecommend, onRelocate = { launcher.launch(LOCATION_PERMISSIONS) }, onOpenOnboarding = onOpenOnboarding)
+        else -> MapContent(vm, onOpenRecommend, onRelocate = { launcher.launch(LOCATION_PERMISSIONS) }, onRecenter = ::recenter, onOpenOnboarding = onOpenOnboarding)
     }
 }
 
@@ -162,65 +179,96 @@ private fun MapContent(
     vm: MapViewModel,
     onOpenRecommend: (Double, Double) -> Unit,
     onRelocate: () -> Unit,
+    onRecenter: () -> Unit,
     onOpenOnboarding: () -> Unit,
 ) {
     val s by vm.state.collectAsState()
     val context = LocalContext.current
     Box(Modifier.fillMaxSize()) {
+        val markers = s.places.map {
+            MarkerData(it.placeId, it.name, it.category, it.lat, it.lng, it.isHot, pinState(it.isCompleted, it.placeId in s.acceptedIds))
+        }.let { list ->
+            // 추천에서 고른 장소가 현재 검색 반경 밖이어도 마커를 보여준다.
+            val d = s.detail
+            if (d != null && list.none { it.id == d.placeId }) {
+                list + MarkerData(d.placeId, d.name, d.category, d.lat, d.lng, d.isHot, pinState(d.isCompleted, d.placeId in s.acceptedIds))
+            } else list
+        }
         OsmMap(
             lat = s.focusLat ?: s.lat,
             lng = s.focusLng ?: s.lng,
             zoom = if (s.isBrowse && s.focusLat == null) BROWSE_ZOOM else 16.0,
-            places = s.places.map { MarkerData(it.placeId, it.name, it.lat, it.lng, it.isHot) }.let { list ->
-                // 추천에서 고른 장소가 현재 검색 반경 밖이어도 마커를 보여준다.
-                val d = s.detail
-                if (d != null && list.none { it.id == d.placeId }) list + MarkerData(d.placeId, d.name, d.lat, d.lng, d.isHot) else list
-            },
+            recenterNonce = s.recenterNonce,
+            fitToPlaces = s.isBrowse && s.focusLat == null,
+            places = markers,
+            selectedId = s.detail?.placeId,
+            myLocation = if (s.isBrowse) null else Triple(s.lat, s.lng, s.accuracy),
             onMarker = vm::openDetail,
             modifier = Modifier.fillMaxSize(),
         )
-        Column(Modifier.fillMaxWidth().statusBarsPadding()) {
-            Surface(
-                color = Color.White,
-                shape = RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp),
-                shadowElevation = 4.dp,
-                modifier = Modifier.fillMaxWidth(),
+        // 상태바와 제목이 지도 위에서도 읽히도록 위쪽을 흰색에서 투명으로 옅게 덮는다.
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .background(
+                    Brush.verticalGradient(
+                        0f to Color.White.copy(alpha = 0.96f),
+                        0.7f to Color.White.copy(alpha = 0.85f),
+                        1f to Color.White.copy(alpha = 0f),
+                    ),
+                )
+                .statusBarsPadding()
+                .padding(top = 12.dp, bottom = 22.dp),
+        ) {
+            ScreenTitle("퀘스트", Modifier.padding(horizontal = 20.dp)) {
+                PillChip("뽈뽈 추천", selected = false, onClick = { onOpenRecommend(s.lat, s.lng) })
+            }
+            Spacer(Modifier.height(10.dp))
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 20.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Column(Modifier.padding(top = 16.dp, bottom = 12.dp)) {
-                    ScreenTitle("퀘스트", Modifier.padding(horizontal = 20.dp)) {
-                        PillChip("뽈뽈 추천", selected = false, onClick = { onOpenRecommend(s.lat, s.lng) })
-                    }
-                    Spacer(Modifier.height(10.dp))
-                    LazyRow(
-                        contentPadding = PaddingValues(horizontal = 20.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                item {
+                    PillChip("전체", s.selectedCategory == null, onClick = { vm.selectCategory(null) })
+                }
+                items(s.categories, key = { it.code }) { c ->
+                    PillChip(c.name, s.selectedCategory == c.code, onClick = { vm.selectCategory(c.code) })
+                }
+            }
+            if (s.isBrowse) {
+                Spacer(Modifier.height(8.dp))
+                Surface(
+                    shape = BbolShapes.Pill,
+                    color = BbolColors.Lavender,
+                    modifier = Modifier.padding(horizontal = 20.dp),
+                ) {
+                    Row(
+                        Modifier.padding(start = 14.dp, end = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        item {
-                            PillChip("전체", s.selectedCategory == null, onClick = { vm.selectCategory(null) })
-                        }
-                        items(s.categories, key = { it.code }) { c ->
-                            PillChip(c.name, s.selectedCategory == c.code, onClick = { vm.selectCategory(c.code) })
-                        }
-                    }
-                    if (s.isBrowse) {
-                        Row(
-                            Modifier.fillMaxWidth().padding(start = 20.dp, end = 8.dp, top = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                        ) {
-                            Text(
-                                "둘러보기 모드 · 종로구 중심",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = BbolColors.Violet,
-                            )
-                            TextButton(onClick = onRelocate) { Text("내 위치 사용", color = BbolColors.Violet) }
-                        }
+                        Text("둘러보기 모드 · 종로구 중심", style = MaterialTheme.typography.labelMedium, color = BbolColors.VioletDeep)
+                        TextButton(onClick = onRelocate) { Text("내 위치 사용", color = BbolColors.Violet) }
                     }
                 }
             }
-            if (s.loading) LinearProgressIndicator(Modifier.fillMaxWidth(), color = BbolColors.Violet)
+            if (s.loading) {
+                Spacer(Modifier.height(8.dp))
+                LinearProgressIndicator(Modifier.fillMaxWidth(), color = BbolColors.Violet)
+            }
         }
-        Box(Modifier.align(Alignment.BottomCenter).padding(12.dp)) {
+        // 내 위치로 돌아가는 둥근 버튼.
+        Surface(
+            onClick = onRecenter,
+            shape = CircleShape,
+            color = Color.White,
+            shadowElevation = 6.dp,
+            modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = 32.dp).size(48.dp),
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(Icons.Filled.MyLocation, contentDescription = "내 위치로", tint = BbolColors.Violet)
+            }
+        }
+        Box(Modifier.align(Alignment.BottomCenter).padding(12.dp).padding(bottom = 20.dp, end = 40.dp)) {
             when {
                 s.error != null -> MapNotice {
                     Text(s.error!!, color = MaterialTheme.colorScheme.error, modifier = Modifier.weight(1f, fill = false))
@@ -230,7 +278,12 @@ private fun MapContent(
                     Text("근처에 장소가 없어요.")
                     if (!s.isBrowse) TextButton(onClick = vm::enterBrowseMode) { Text("종로구 둘러보기", color = BbolColors.Violet) }
                 }
-                else -> MapNotice { Text("장소 ${s.places.size}곳", style = MaterialTheme.typography.labelLarge) }
+                else -> MapNotice {
+                    Text("장소 ${s.places.size}곳", style = MaterialTheme.typography.labelLarge)
+                    if (s.acceptedIds.isNotEmpty()) {
+                        Text("  ·  진행 중 ${s.acceptedIds.size}", style = MaterialTheme.typography.labelLarge, color = BbolColors.Violet)
+                    }
+                }
             }
         }
     }
@@ -253,8 +306,12 @@ private fun MapContent(
                     s.detailLoading -> CircularProgressIndicator(Modifier.align(Alignment.CenterHorizontally), color = BbolColors.Violet)
                     s.detail != null -> PlaceDetailContent(
                         d = s.detail!!,
+                        accepted = s.detailAccepted,
+                        distanceToPlace = if (s.isBrowse) null else distanceMeters(s.lat, s.lng, s.detail!!.lat, s.detail!!.lng),
                         blockedReason = s.arrivalBlockedReason(hasLocationPermission(context)),
                         arriving = s.arriving,
+                        onAccept = { vm.acceptQuest(s.detail!!.placeId) },
+                        onCancel = { vm.cancelQuest(s.detail!!.placeId) },
                         onArrive = {
                             val id = s.detail!!.placeId
                             fetchLocation(context) { loc ->
@@ -267,6 +324,12 @@ private fun MapContent(
             }
         }
     }
+}
+
+private fun pinState(completed: Boolean, accepted: Boolean) = when {
+    completed -> PinState.COMPLETED
+    accepted -> PinState.ACCEPTED
+    else -> PinState.NORMAL
 }
 
 /** 하단에 떠 있는 둥근 흰 알림 카드. */
@@ -282,7 +345,16 @@ private fun MapNotice(content: @Composable androidx.compose.foundation.layout.Ro
 }
 
 @Composable
-private fun PlaceDetailContent(d: PlaceDetail, blockedReason: String?, arriving: Boolean, onArrive: () -> Unit) {
+private fun ColumnScope.PlaceDetailContent(
+    d: PlaceDetail,
+    accepted: Boolean,
+    distanceToPlace: Long?,
+    blockedReason: String?,
+    arriving: Boolean,
+    onAccept: () -> Unit,
+    onCancel: () -> Unit,
+    onArrive: () -> Unit,
+) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         CategoryTile(d.category, size = 64.dp)
         Spacer(Modifier.width(14.dp))
@@ -307,14 +379,39 @@ private fun PlaceDetailContent(d: PlaceDetail, blockedReason: String?, arriving:
         color = BbolColors.InkSoft,
     )
     Spacer(Modifier.height(16.dp))
-    PrimaryButton(
-        if (d.isCompleted) "오늘 완료" else "도착 인증하기",
-        onClick = onArrive,
-        enabled = blockedReason == null && !arriving && !d.isCompleted,
-        loading = arriving,
-    )
-    if (blockedReason != null) {
-        Spacer(Modifier.height(8.dp))
+    when {
+        d.isCompleted -> PrimaryButton("오늘 완료", onClick = {}, enabled = false)
+        !accepted -> PrimaryButton("퀘스트 받기", onClick = onAccept)
+        else -> {
+            Surface(shape = BbolShapes.Card, color = BbolColors.Lavender, modifier = Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(14.dp)) {
+                    Text("진행 중인 퀘스트", style = MaterialTheme.typography.titleSmall, color = BbolColors.VioletDeep)
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        if (distanceToPlace != null) "지금 ${Formatters.distance(distanceToPlace)} 떨어져 있어요" else "위치를 확인하면 남은 거리를 알려드려요",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Text(
+                        "장소 반경 ${if (d.radius > 0) "${d.radius}m " else ""}안에 들어가서 도착 인증을 눌러 주세요.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = BbolColors.InkSoft,
+                    )
+                }
+            }
+            Spacer(Modifier.height(12.dp))
+            PrimaryButton(
+                "도착 인증하기",
+                onClick = onArrive,
+                enabled = blockedReason == null && !arriving,
+                loading = arriving,
+            )
+            TextButton(onClick = onCancel, enabled = !arriving, modifier = Modifier.align(Alignment.CenterHorizontally)) {
+                Text("퀘스트 포기하기", color = BbolColors.InkSoft, style = MaterialTheme.typography.bodySmall)
+            }
+        }
+    }
+    if (blockedReason != null && !d.isCompleted && accepted) {
+        Spacer(Modifier.height(4.dp))
         Text(blockedReason, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.secondary)
     }
 }
@@ -355,14 +452,27 @@ private fun Location.toArrivalFix() = ArrivalFix(
     isMock = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) isMock else isFromMockProvider,
 )
 
-private data class MarkerData(val id: Long, val title: String, val lat: Double, val lng: Double, val hot: Boolean)
+
+private data class MarkerData(
+    val id: Long,
+    val title: String,
+    val category: String,
+    val lat: Double,
+    val lng: Double,
+    val hot: Boolean,
+    val state: PinState,
+)
 
 @Composable
 private fun OsmMap(
     lat: Double,
     lng: Double,
     zoom: Double,
+    recenterNonce: Int,
+    fitToPlaces: Boolean,
     places: List<MarkerData>,
+    selectedId: Long?,
+    myLocation: Triple<Double, Double, Float?>?,
     onMarker: (Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -372,6 +482,10 @@ private fun OsmMap(
             setTileSource(TileSourceFactory.MAPNIK)
             setMultiTouchControls(true)
             isTilesScaledToDpi = true
+            // 베이스 지도를 옅게 해서 핀이 돋보이게 한다. 출처 표기(CopyrightOverlay)는 아래 update에서 유지한다.
+            overlayManager.tilesOverlay.setColorFilter(softTileFilter())
+            setBackgroundColor(0xFFEFEAFB.toInt())
+            minZoomLevel = 11.0
             controller.setZoom(zoom)
             controller.setCenter(GeoPoint(lat, lng))
         }
@@ -392,21 +506,40 @@ private fun OsmMap(
         }
     }
     // 중심이 바뀔 때만 카메라를 옮긴다(사용자가 지도를 움직인 뒤에는 건드리지 않는다).
-    LaunchedEffect(lat, lng, zoom) {
-        mapView.controller.setZoom(zoom)
-        mapView.controller.animateTo(GeoPoint(lat, lng))
+    // 둘러보기 모드에서는 장소가 로드되면 장소들이 한눈에 들어오게 맞춘다(너무 가깝거나 멀지 않게 14~15.5).
+    val fitKey = if (fitToPlaces) places.size else -1
+    LaunchedEffect(lat, lng, zoom, recenterNonce, fitKey) {
+        if (fitToPlaces && places.size >= 2) {
+            val raw = BoundingBox.fromGeoPointsSafe(places.map { GeoPoint(it.lat, it.lng) })
+            // 위쪽 제목/칩 영역에 핀이 가려지지 않도록 북쪽을 조금 더 넓힌다.
+            val box = BoundingBox(raw.latNorth + raw.latitudeSpan * 0.1, raw.lonEast, raw.latSouth, raw.lonWest)
+            mapView.post {
+                if (mapView.width > 0) {
+                    mapView.zoomToBoundingBox(box.increaseByScale(1.1f), false)
+                    val z = mapView.zoomLevelDouble.coerceIn(13.5, 15.0)
+                    mapView.controller.setZoom(z)
+                    mapView.controller.setCenter(box.centerWithDateLine)
+                }
+            }
+        } else {
+            mapView.controller.setZoom(zoom)
+            if (fitToPlaces) mapView.controller.setCenter(GeoPoint(lat, lng)) else mapView.controller.animateTo(GeoPoint(lat, lng))
+        }
     }
     AndroidView(
         factory = { mapView },
         modifier = modifier,
         update = { view ->
             view.overlays.clear()
-            places.forEach { p ->
+            if (myLocation != null) view.overlays.add(MyLocationDot(myLocation.first, myLocation.second, myLocation.third))
+            // 선택된 핀이 맨 위에 오도록 마지막에 그린다.
+            places.sortedBy { it.id == selectedId }.forEach { p ->
                 view.overlays.add(
                     Marker(view).apply {
                         position = GeoPoint(p.lat, p.lng)
                         title = if (p.hot) "${p.title} (HOT)" else p.title
-                        setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                        icon = PinFactory.get(view.context, p.category, p.state, p.id == selectedId, p.hot)
+                        setAnchor(Marker.ANCHOR_CENTER, 0.88f)
                         setOnMarkerClickListener { _, _ ->
                             onMarker(p.id)
                             true
@@ -414,6 +547,7 @@ private fun OsmMap(
                     },
                 )
             }
+            view.overlays.add(CopyrightOverlay(view.context).apply { setAlignBottom(true) })
             view.invalidate()
         },
     )
