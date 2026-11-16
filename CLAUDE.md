@@ -18,7 +18,7 @@
 - 팀 저장소 복제본: `C:\dev\bbolbbol\server`(바깥 저장소에서는 `.git/info/exclude`로 제외). 이식 브랜치는 `port/*`, 병렬 작업은 `server/.worktrees/<이름>`.
 - **팀 저장소(origin)에는 절대 push하지 않는다.** 이식은 로컬 브랜치에서만 하고, 올리는 것은 사용자가 "올려줘"라고 할 때만 한다.
 - 팀 저장소의 구조와 코드 스타일을 따른다(`com.bbolbbol.server.{domain,global}`, 도메인별 `ErrorCode` enum, 탭 들여쓰기). 달라진 점은 보고서에 "deviation"으로 적는다.
-- Docker가 없으므로 local과 test는 H2(PostgreSQL 모드)를 쓴다. PostGIS 타입은 아직 쓰지 않고 위경도 DOUBLE 컬럼을 쓴다(deviation).
+- local과 test는 H2(PostgreSQL 모드)를 쓰고, 실제 PostgreSQL 17/Redis는 `BBOL_IT_PG`/`BBOL_IT_REDIS` opt-in 테스트로 검증했다. PostGIS 타입은 쓰지 않고 위경도 DOUBLE 컬럼을 쓴다(deviation).
 - 앱은 HTTP 계약만 쓰므로 영향이 없다. 비교 문서는 `docs/reports/github-server-comparison.md`.
 
 ## 역할
@@ -61,30 +61,42 @@
 
 ## 환경 메모 (이 PC 기준, 바뀌면 갱신)
 - Java Temurin 21이 있다. Gradle은 설치돼 있지 않으니 `backend/`의 `./gradlew`를 쓴다.
-- Docker와 WSL 배포판이 **없다**. docker-compose는 작성만 하고 기동 확인은 설치 후에 한다. 그 전에는 "미검증"으로 표시한다.
+- Docker Desktop은 설치돼 있다(CLI 전체 경로 `C:/Users/f/AppData/Local/Programs/DockerDesktop/resources/bin/docker.exe`, PATH에는 없음). 사용자가 엔진을 켜야 한다. compose 기동은 pg-verify에서 실검증했다.
 - 3306은 다른 MySQL이 쓰고 있다. 이 프로젝트의 호스트 포트는 MySQL 3307, Redis 6380이다.
 - DB 없이 확인하려면 `local` 프로파일(H2)을 쓴다. 테스트는 `application-test.yml`(H2)로 돈다.
 - Python은 동작하지 않는다. 스크립트가 필요하면 node를 쓴다.
 
-## 현재 진행 상황
-승인된 0단계 계획은 `docs/stage-0-plan.md`, 단계별 결과는 `docs/reports/`에 있다. 브랜치는 직전 브랜치에서 분기해 쌓는다(main에는 아직 병합하지 않았다).
-- 0-1 repo 뼈대 완료(`main`).
-- 0-2 뼈대, 공통 응답, 에러 코드 완료(`feat/0-skeleton`).
-- 0-3 compose, 설정, PhotoStorage 포트, ERD 초안 완료(`feat/0-infra`). Docker가 없어서 compose는 미검증.
-- 0-4 보안 기반 완료(`feat/0-security`): JWT 검증, AUTH401, local 전용 고정 userId 필터, 프레임워크 예외 404/405/415 매핑 수정. `.gitattributes`(LF 고정)도 이 브랜치에 추가했다.
-- 0-5 테스트 완료(`test/0-common`, 66개 중 65개 통과, 1개 건너뜀).
-- 0-6 review(조건부 통과)와 수정 완료(`feat/0-fixes`): Redis 비밀번호와 로컬 바인딩, `UserStatusChecker` 방식, `typ=access`, `Clock` 빈, `createdResponse`. 테스트 68개 통과. 보고서는 `docs/reports/stage-0-6.md`.
-- 0단계 스크린샷은 `docs/screenshots/stage-0/`(에뮬레이터 브라우저로 `/health` 등).
-- 1단계(`docs/stage-1-plan.md`) 구현과 통합 완료(`feat/1-integration`, main에는 병합하지 않음): 사용자 API 6개, 장소 API 3개, 카카오 수집 스크립트(실호출 미검증), Flyway, 샘플 데이터(local 전용), Kotlin 앱(로그인, 가입, 내 정보, 지도). 백엔드 테스트 165개와 앱 단위 테스트 29개 통과, 에뮬레이터 스크린샷 10장(`docs/screenshots/stage-1/`). 보고서는 `docs/reports/stage-1-backend.md`, `stage-1-app.md`.
-- 병렬 작업은 `.worktrees/<이름>`(git에서 제외)에서 한다. 서버는 `local` 프로파일로 8080이 아닌 비어 있는 포트에 띄우고, 앱은 `-PapiBaseUrl=http://10.0.2.2:<포트>/`로 빌드한다.
-- **서버 이식 완료(2026-11-14):** 사용자, 장소, 샘플 데이터를 팀 저장소 스택(Kotlin)으로 옮겨 `C:\dev\bbolbbol\server`의 `port/integration`에서 합쳤다. 테스트 170개 통과. 보고서는 `docs/reports/port-1-server.md`. 팀 저장소에는 올리지 않았다. Java `backend/`는 참고용이다.
-- 에뮬레이터는 사용자가 다른 프로젝트 확인을 위해 종료를 요청해서 **꺼 둔 상태**다. 사용자가 "써도 돼"라고 하기 전에는 켜지 않는다.
-- **2단계 완료(2026-11-14):** 서버(`C:\dev\bbolbbol\server`의 `port/integration`)에 도착 인증, 포인트(내 포인트, 내역, 활동 일지), 추천(CURATED)을 추가했고 review(조건부 통과)의 지적을 수정했다. 서버 테스트 226개 통과. 앱(`feat/2-integration`)에 도착 인증, 포인트 요약, 포인트 내역, 활동 일지, 추천 화면을 추가했고 단위 테스트 48개와 빌드 통과. 보고서는 `docs/reports/stage-2.md`. 앱 2단계 화면은 에뮬레이터에서 확인하지 못했다.
-- **3단계:** 쟁점 2~8에 대한 사용자 결정이 없어 구현할 API가 없다. 남은 API(통계, 랭킹, 사진 업로드, 이메일 인증, 재발급, 탈퇴, 카카오, 온보딩)는 최종 보고서에 목록으로 남긴다.
-- **UI 개편 완료:** 프로토타입 이미지(`docs/UI 프로토타입/`)에 맞춰 보라색 디자인, 하단 탭 4개, 홈, 랭킹(준비 중), 마이를 반영했다(`feat/2-integration`에 병합). 앱 단위 테스트 57개 통과. 에뮬레이터로 확인하지 못했다.
-- **최종 보고서 작성 완료:** `docs/reports/final-report.md`(구현한 기능, 사용 기술, Notion과 달라진 점, 구현하지 않은 API 14개, 미검증, 사용자 결정 목록).
-- **현재 상태(2026-11-14): 구현과 검증 완료.** 명세 API 28개를 모두 구현했다(서버 H2 483개 통과, 실제 PostgreSQL 467개와 Redis 통합 17개 통과, 앱 단위 161개 debug / 160개 release). 에뮬레이터 E2E(`docs/reports/stage-3-e2e.md`)에서 찾은 버그는 `feat/6-fix`에서 수정했다(`docs/reports/stage-3-fix.md`). 재검증(recheck2)까지 통과했다. 남은 것은 선택 후속 작업(낮은 등급 앱 개선, 미검증 항목, 배포 준비, 팀 저장소 PR)이다. 에뮬레이터는 위 "꺼 둔 상태" 문장보다 이후 상황이 우선이며, 사용 여부는 사용자 지시를 따른다.
-- (이전 계획) 사용자의 결정(쟁점 2~8, 팀 저장소에 올릴 시점, 에뮬레이터 재사용 허락)을 받으면 이어서 진행한다. 커밋할 때는 `git add -A`를 쓰지 말고 파일을 지정한다(사용자가 `docs/UI 프로토타입` 등에 직접 넣는 파일이 섞이지 않게). 에이전트에는 `name`으로 이름표를 붙인다.
-- 사용자가 "끝까지 진행"을 지시했다. push, PR, 병합 금지와 쟁점 2~8 API 보류는 그대로다. 앱 프로젝트 생성(Kotlin + Compose + Retrofit)은 1단계에 포함해도 된다는 승인을 받았다. 마지막에 `docs/reports/final-report.md`(구현 기능, 사용 기술, Notion과 달라진 점)를 쓴다.
-- 결정 대기(가정으로 진행 중): COMMON404/405/415/500 유지 여부, 성공 응답 기본 message 문구, H2 `runtimeOnly` 분리(배포 전), 0-3·0-4 보고서의 OPEN 항목들.
-- 새 세션은 `git branch --show-current`와 `git log --oneline`으로 현재 위치를 확인한 뒤 이 목록의 다음 단계부터 이어간다. 진행 중인 에이전트가 있는지(`git status`가 깨끗한지)도 확인한다.
+## 현재 진행 상황 (새 세션은 여기부터 읽는다)
+
+### 한눈에 (2026-11-16 기준)
+- **프로토타입 구현과 검증 완료.** 명세 API 28개(+/health) 구현, Kotlin 앱(Compose) 전 화면 구현, 에뮬레이터 E2E와 재검증 통과.
+- **작업 브랜치: `feat/2-integration`** (앱 + 문서 통합 브랜치, main에는 병합하지 않음). 서버는 `C:\dev\bbolbbol\server`(팀 저장소 복제본, 브랜치 `port/integration`)에 있다. Java `backend/`는 참고용이다.
+- 테스트: 서버 H2 483개 통과(전체 504, opt-in 21 건너뜀), 실제 PostgreSQL 467개, Redis 통합 17개 / 앱 단위 debug 183개, release 182개 통과.
+- **GitHub와 팀 저장소 origin에는 올리지 않는다.** 로컬 전용. 사용자가 "올려줘"라고 할 때만 push/PR, 병합은 하지 않는다.
+- 최종 정리 문서: `docs/reports/final-report.md`(구현 기능, 기술, Notion과 달라진 점, 사용자 결정 A1~A8, 주의점). 사용자 결정 문서는 Claude 문서 "뽈뽈 사용자 결정·준비 사항"(https://claude.ai/artifact/5dTCTDe98WT8QhG1gE6wH1).
+
+### 3단계 이후에 한 일 (최신순)
+- **홈 "진행 중인 퀘스트"**(`feat/10-home-ongoing`, 병합됨): 받은 퀘스트를 카드로 표시, 포기, 빈 상태. 보고서 `docs/reports/stage-5-home.md`, 스크린샷 `docs/screenshots/stage-5/`.
+- **지도 개선과 "퀘스트 받기" 단계**(`feat/9-map-quest`, 병합됨): 흐리게 처리한 배경 지도, 카테고리 핀, 내 위치 점, 핀 탭 → 퀘스트 받기 → 도착 인증. 받은 퀘스트는 앱 안(`QuestBook`, SharedPreferences, 사용자·장소·KST 날짜별, 자정 만료)에만 저장하고 서버는 모른다. 이는 Notion 명세와 다르다(`docs/reports/stage-3-map.md`). 스크린샷 `docs/screenshots/stage-4/`.
+- **에뮬레이터 재검증 2회**(`stage-3-recheck.md`, `stage-3-recheck2.md`)와 앱 버그 수정(`stage-3-fix.md`): 가입·카카오 직후 온보딩 이동(NavHost 시작 화면 고정), 홈·마이 재진입 갱신 등.
+- **에뮬레이터 E2E**(`stage-3-e2e.md`, 스크린샷 `docs/screenshots/stage-3/`), PostgreSQL/Redis 실검증, 보안 점검과 수정.
+- 0~2단계 결과는 `docs/reports/stage-0-*.md`, `stage-1-*.md`, `stage-2.md`, `port-1-server.md`에 있다.
+
+### 남은 일 (선택)
+- 서버에 퀘스트 받기 저장(수락·목록·포기 API와 테이블) — 지금은 기기 안에만 저장돼 재설치·다른 기기에서는 사라진다. 사용자가 원하면 진행.
+- 낮은 등급 앱 개선: 마이에서 홈 복귀 직후 잠깐 0P로 보임, 통계 타일 높이, 랭킹 단상 쏠림, 둘러보기 중심부 핀 겹침, 내 위치 연속 추적 없음.
+- 지도 품질을 더 올리려면 카카오맵 SDK(사용자가 카카오 개발자 앱 등록·네이티브 키 발급 필요).
+- 미검증: 실제 카카오 SDK 로그인, 실제 SMTP(Gmail) 발송, R8(release 난독화), 실기기와 Android 8~10, 네트워크 끊김 화면, 반경 밖 도착 인증 화면.
+- 결정 대기(현재 동작 유지): COMMON404/405/415/500 유지 여부, 성공 응답 기본 message 문구, H2 `runtimeOnly` 분리(배포 전), 팀 저장소에 올릴 시점.
+
+### 데모 실행 방법 (이 PC)
+1. 서버: `C:\dev\bbolbbol\server`에서 `SPRING_PROFILES_ACTIVE=local BBOLBBOL_LOCAL_FIXED_USER_ID= ./gradlew bootRun --args='--server.port=8120'`(백그라운드). 서버를 켜 둔 동안 그 폴더의 `./gradlew --stop`을 쓰지 않는다(서버가 같이 꺼진다). 재시작하면 데이터와 로그인이 초기화된다. 이메일 인증 코드는 서버 로그의 `[LOCAL MAIL]` 줄에 찍힌다.
+2. 에뮬레이터: AVD `Medium_Phone`(`emulator -avd Medium_Phone`, adb `emulator-5554`). 위치는 `adb emu geo fix 126.9780 37.5796`(경복궁).
+3. 앱 빌드와 설치: `cd app && ./gradlew assembleDebug -PapiBaseUrl=http://10.0.2.2:8120/` 후 `adb install -r app/build/outputs/apk/debug/app-debug.apk`. `app/local.properties`에 `sdk.dir=C:/Users/f/AppData/Local/Android/Sdk`(슬래시) 필요.
+4. 데모 계정: `demo1@example.com`(뽈뽈이, 온보딩 완료), `demo4@example.com`(종로탐험가), `demo2@example.com`(온보딩 전), 공통 비밀번호 `demo1234!`. 자세한 내용은 `server/docs/local-demo.md`.
+- 메모리가 빠듯하다: Gradle은 한 번에 하나, 에이전트가 모두 쉬는 때만 데몬을 끈다.
+
+### 새 세션 시작 절차
+1. `git branch --show-current`, `git log --oneline -10`, `git status`로 위치와 진행 중인 작업을 확인한다(`docs/UI 프로토타입` 파일 변경은 사용자 것이니 건드리지 않는다).
+2. `docs/reports/final-report.md`와 이 절을 읽는다. 8120 포트 서버와 에뮬레이터가 켜져 있는지 확인한다(`curl localhost:8120/health`, `adb devices`).
+3. 커밋할 때는 `git add -A`를 쓰지 말고 파일을 지정한다. 에이전트에는 `name`을 붙이고, 동시에 3개까지만 돌린다.
