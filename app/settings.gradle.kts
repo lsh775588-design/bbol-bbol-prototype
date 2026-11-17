@@ -10,6 +10,8 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        // 카카오맵 SDK v2(Android)
+        maven("https://devrepo.kakao.com/nexus/repository/kakaomap-releases/")
     }
 }
 rootProject.name = "bbolbbol-app"
