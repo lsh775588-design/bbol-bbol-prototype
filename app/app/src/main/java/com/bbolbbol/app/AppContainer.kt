@@ -29,9 +29,8 @@ import com.bbolbbol.app.data.repository.UserRepository
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
-import org.osmdroid.config.Configuration
+import com.kakao.vectormap.KakaoMapSdk
 import retrofit2.Retrofit
-import java.io.File
 import java.util.concurrent.TimeUnit
 
 /** 수동 DI. 화면 ViewModel은 여기서 저장소를 가져다 쓴다. */
@@ -101,11 +100,7 @@ class BbolApplication : Application() {
         super.onCreate()
         container = AppContainer(this)
         installPhotoImageLoader(this, container.client, container.session.loggedIn)
-        // osmdroid: OSM 타일 서버 정책상 User-Agent 필수. 캐시는 앱 전용 캐시 폴더(저장소 권한 불필요).
-        Configuration.getInstance().apply {
-            userAgentValue = packageName
-            osmdroidBasePath = File(cacheDir, "osmdroid")
-            osmdroidTileCache = File(cacheDir, "osmdroid/tiles")
-        }
+        // 카카오맵 SDK. 키가 비어 있으면 초기화하지 않고, 지도 화면이 안내 문구를 보여 준다.
+        if (BuildConfig.KAKAO_NATIVE_APP_KEY.isNotBlank()) KakaoMapSdk.init(this, BuildConfig.KAKAO_NATIVE_APP_KEY)
     }
 }

@@ -28,8 +28,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material3.Icon
 import androidx.compose.ui.graphics.Brush
-import org.osmdroid.util.BoundingBox
-import org.osmdroid.views.overlay.CopyrightOverlay
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -69,10 +67,24 @@ import com.bbolbbol.app.ui.common.hasLocationPermission
 import com.bbolbbol.app.ui.theme.BbolColors
 import com.bbolbbol.app.ui.theme.BbolShapes
 import com.bbolbbol.app.util.Formatters
-import org.osmdroid.tileprovider.tilesource.TileSourceFactory
-import org.osmdroid.util.GeoPoint
-import org.osmdroid.views.MapView
-import org.osmdroid.views.overlay.Marker
+import com.bbolbbol.app.BuildConfig
+import com.kakao.vectormap.KakaoMap
+import com.kakao.vectormap.KakaoMapReadyCallback
+import com.kakao.vectormap.LatLng
+import com.kakao.vectormap.MapLifeCycleCallback
+import com.kakao.vectormap.MapView
+import com.kakao.vectormap.camera.CameraAnimation
+import com.kakao.vectormap.camera.CameraUpdateFactory
+import com.kakao.vectormap.label.CompetitionType
+import com.kakao.vectormap.label.LabelLayerOptions
+import com.kakao.vectormap.label.LabelOptions
+import com.kakao.vectormap.label.LabelStyle
+import com.kakao.vectormap.label.LabelStyles
+import com.kakao.vectormap.label.OrderingType
+import com.kakao.vectormap.shape.DimScreenCover
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 
 private val LOCATION_PERMISSIONS = arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
 
@@ -194,7 +206,7 @@ private fun MapContent(
                 list + MarkerData(d.placeId, d.name, d.category, d.lat, d.lng, d.isHot, pinState(d.isCompleted, d.placeId in s.acceptedIds))
             } else list
         }
-        OsmMap(
+        KakaoMapView(
             lat = s.focusLat ?: s.lat,
             lng = s.focusLng ?: s.lng,
             zoom = if (s.isBrowse && s.focusLat == null) BROWSE_ZOOM else 16.0,
@@ -453,18 +465,16 @@ private fun Location.toArrivalFix() = ArrivalFix(
 )
 
 
-private data class MarkerData(
-    val id: Long,
-    val title: String,
-    val category: String,
-    val lat: Double,
-    val lng: Double,
-    val hot: Boolean,
-    val state: PinState,
-)
+private const val PLACE_LAYER_ID = "places"
+private const val ME_LAYER_ID = "me"
 
+/** 지도 위에 얹는 흰색 반투명 덮개(ARGB). */
+private const val DIM_COLOR = 0x8CFFFFFF.toInt()
+private const val FIT_PADDING_PX = 80
+
+/** 지도 키가 없으면 SDK를 만들지 않고 안내 문구만 보여 준다. */
 @Composable
-private fun OsmMap(
+private fun KakaoMapView(
     lat: Double,
     lng: Double,
     zoom: Double,
@@ -476,79 +486,128 @@ private fun OsmMap(
     onMarker: (Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val context = LocalContext.current
-    val mapView = remember {
-        MapView(context).apply {
-            setTileSource(TileSourceFactory.MAPNIK)
-            setMultiTouchControls(true)
-            isTilesScaledToDpi = true
-            // 베이스 지도를 옅게 해서 핀이 돋보이게 한다. 출처 표기(CopyrightOverlay)는 아래 update에서 유지한다.
-            overlayManager.tilesOverlay.setColorFilter(softTileFilter())
-            setBackgroundColor(0xFFEFEAFB.toInt())
-            minZoomLevel = 11.0
-            controller.setZoom(zoom)
-            controller.setCenter(GeoPoint(lat, lng))
+    if (!isMapKeyConfigured(BuildConfig.KAKAO_NATIVE_APP_KEY)) {
+        Box(modifier.background(BbolColors.Lavender), contentAlignment = Alignment.Center) {
+            Text("지도 키가 설정되지 않았어요", style = MaterialTheme.typography.bodyMedium, color = BbolColors.VioletDeep)
         }
+        return
     }
+    val context = LocalContext.current
+    var kakaoMap by remember { mutableStateOf<KakaoMap?>(null) }
+    var mapError by remember { mutableStateOf<String?>(null) }
+    val currentOnMarker by rememberUpdatedState(onMarker)
+    val mapView = remember { MapView(context) }
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     DisposableEffect(lifecycle, mapView) {
+        mapView.start(
+            object : MapLifeCycleCallback() {
+                override fun onMapDestroy() {}
+                override fun onMapError(error: Exception) {
+                    mapError = "지도를 불러오지 못했어요"
+                }
+            },
+            object : KakaoMapReadyCallback() {
+                override fun getPosition(): LatLng = LatLng.from(lat, lng)
+                override fun getZoomLevel(): Int = kakaoLevel(zoom)
+                override fun onMapReady(map: KakaoMap) {
+                    // 베이스 지도를 옅게 해서 핀이 돋보이게 한다(OSM 때의 색 필터 대신 흰색 반투명 덮개, 라벨은 덮지 않는다).
+                    map.dimScreenManager?.dimScreenLayer?.apply {
+                        setDimScreenCover(DimScreenCover.Map)
+                        setColor(DIM_COLOR)
+                        setVisible(true)
+                    }
+                    map.labelManager?.apply {
+                        addLayer(LabelLayerOptions.from(ME_LAYER_ID).setCompetitionType(CompetitionType.None).setZOrder(10_000))
+                        addLayer(
+                            LabelLayerOptions.from(PLACE_LAYER_ID)
+                                .setCompetitionType(CompetitionType.None)
+                                .setOrderingType(OrderingType.Rank)
+                                .setZOrder(10_001),
+                        )
+                    }
+                    map.setOnLabelClickListener { _, _, label ->
+                        (label.tag as? Long)?.let { currentOnMarker(it) }
+                        true
+                    }
+                    kakaoMap = map
+                }
+            },
+        )
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
-                Lifecycle.Event.ON_RESUME -> mapView.onResume()
-                Lifecycle.Event.ON_PAUSE -> mapView.onPause()
+                Lifecycle.Event.ON_RESUME -> mapView.resume()
+                Lifecycle.Event.ON_PAUSE -> mapView.pause()
                 else -> {}
             }
         }
         lifecycle.addObserver(observer)
         onDispose {
             lifecycle.removeObserver(observer)
-            mapView.onDetach()
+            kakaoMap = null
+            mapView.finish()
         }
     }
     // 중심이 바뀔 때만 카메라를 옮긴다(사용자가 지도를 움직인 뒤에는 건드리지 않는다).
-    // 둘러보기 모드에서는 장소가 로드되면 장소들이 한눈에 들어오게 맞춘다(너무 가깝거나 멀지 않게 14~15.5).
+    // 둘러보기 모드에서는 장소가 로드되면 장소들이 한눈에 들어오게 맞춘다.
     val fitKey = if (fitToPlaces) places.size else -1
-    LaunchedEffect(lat, lng, zoom, recenterNonce, fitKey) {
-        if (fitToPlaces && places.size >= 2) {
-            val raw = BoundingBox.fromGeoPointsSafe(places.map { GeoPoint(it.lat, it.lng) })
-            // 위쪽 제목/칩 영역에 핀이 가려지지 않도록 북쪽을 조금 더 넓힌다.
-            val box = BoundingBox(raw.latNorth + raw.latitudeSpan * 0.1, raw.lonEast, raw.latSouth, raw.lonWest)
-            mapView.post {
-                if (mapView.width > 0) {
-                    mapView.zoomToBoundingBox(box.increaseByScale(1.1f), false)
-                    val z = mapView.zoomLevelDouble.coerceIn(13.5, 15.0)
-                    mapView.controller.setZoom(z)
-                    mapView.controller.setCenter(box.centerWithDateLine)
-                }
-            }
+    LaunchedEffect(kakaoMap, lat, lng, zoom, recenterNonce, fitKey) {
+        val map = kakaoMap ?: return@LaunchedEffect
+        val bounds = boundsOf(places)
+        val center = LatLng.from(lat, lng)
+        if (fitToPlaces && places.size >= 2 && bounds != null) {
+            val b = withNorthMargin(bounds)
+            map.moveCamera(CameraUpdateFactory.fitMapPoints(arrayOf(LatLng.from(b.south, b.west), LatLng.from(b.north, b.east)), FIT_PADDING_PX))
+            val level = map.zoomLevel
+            val clamped = clampBrowseLevel(level)
+            if (clamped != level) map.moveCamera(CameraUpdateFactory.zoomTo(clamped))
+        } else if (fitToPlaces) {
+            map.moveCamera(CameraUpdateFactory.newCenterPosition(center, kakaoLevel(zoom)))
         } else {
-            mapView.controller.setZoom(zoom)
-            if (fitToPlaces) mapView.controller.setCenter(GeoPoint(lat, lng)) else mapView.controller.animateTo(GeoPoint(lat, lng))
+            map.moveCamera(CameraUpdateFactory.newCenterPosition(center, kakaoLevel(zoom)), CameraAnimation.from(300))
         }
     }
-    AndroidView(
-        factory = { mapView },
-        modifier = modifier,
-        update = { view ->
-            view.overlays.clear()
-            if (myLocation != null) view.overlays.add(MyLocationDot(myLocation.first, myLocation.second, myLocation.third))
-            // 선택된 핀이 맨 위에 오도록 마지막에 그린다.
-            places.sortedBy { it.id == selectedId }.forEach { p ->
-                view.overlays.add(
-                    Marker(view).apply {
-                        position = GeoPoint(p.lat, p.lng)
-                        title = if (p.hot) "${p.title} (HOT)" else p.title
-                        icon = PinFactory.get(view.context, p.category, p.state, p.id == selectedId, p.hot)
-                        setAnchor(Marker.ANCHOR_CENTER, 0.88f)
-                        setOnMarkerClickListener { _, _ ->
-                            onMarker(p.id)
-                            true
-                        }
-                    },
+    // 내 위치 점.
+    LaunchedEffect(kakaoMap, myLocation) {
+        val layer = kakaoMap?.labelManager?.getLayer(ME_LAYER_ID) ?: return@LaunchedEffect
+        layer.removeAll()
+        if (myLocation != null) {
+            val icon = MyLocationIcon.get(context, myLocation.third)
+            layer.addLabel(
+                LabelOptions.from(LatLng.from(myLocation.first, myLocation.second))
+                    .setStyles(LabelStyles.from(LabelStyle.from(icon).setApplyDpScale(false)))
+                    .setClickable(false),
+            )
+        }
+    }
+    // 장소 핀. 선택된 핀이 맨 위에 오도록 순위를 높인다.
+    LaunchedEffect(kakaoMap, places, selectedId) {
+        val layer = kakaoMap?.labelManager?.getLayer(PLACE_LAYER_ID) ?: return@LaunchedEffect
+        layer.removeAll()
+        val styleCache = HashMap<String, LabelStyles>()
+        orderForDrawing(places, selectedId).forEach { p ->
+            val selected = p.id == selectedId
+            val styles = styleCache.getOrPut(pinKey(p, selectedId)) {
+                LabelStyles.from(
+                    LabelStyle.from(PinFactory.get(context, p.category, p.state, selected, p.hot))
+                        .setApplyDpScale(false)
+                        .setAnchorPoint(0.5f, 0.88f),
                 )
             }
-            view.overlays.add(CopyrightOverlay(view.context).apply { setAlignBottom(true) })
-            view.invalidate()
-        },
-    )
+            layer.addLabel(
+                LabelOptions.from(LatLng.from(p.lat, p.lng))
+                    .setStyles(styles)
+                    .setRank(labelRank(p, selectedId))
+                    .setTag(p.id)
+                    .setClickable(true),
+            )
+        }
+    }
+    Box(modifier) {
+        AndroidView(factory = { mapView }, modifier = Modifier.fillMaxSize())
+        mapError?.let {
+            Box(Modifier.fillMaxSize().background(BbolColors.Lavender), contentAlignment = Alignment.Center) {
+                Text(it, style = MaterialTheme.typography.bodyMedium, color = BbolColors.VioletDeep)
+            }
+        }
+    }
 }
