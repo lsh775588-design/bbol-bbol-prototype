@@ -15,6 +15,8 @@ val kakaoNativeAppKey: String = rootProject.file("local.properties").takeIf { it
     ?.let { f -> Properties().apply { f.inputStream().use { load(it) } }.getProperty("KAKAO_NATIVE_APP_KEY") }
     ?.trim()?.removeSurrounding("\"")
     .orEmpty()
+// BuildConfig 문자열 리터럴에 안전하게 들어가도록 \ 와 " 를 이스케이프한다.
+val kakaoKeyLiteral: String = kakaoNativeAppKey.replace("\\", "\\\\").replace("\"", "\\\"")
 
 android {
     namespace = "com.bbolbbol.app"
@@ -34,13 +36,13 @@ android {
     buildTypes {
         debug {
             buildConfigField("String", "API_BASE_URL", "\"${apiBaseUrl ?: "http://10.0.2.2:8080/"}\"")
-            buildConfigField("String", "KAKAO_NATIVE_APP_KEY", "\"$kakaoNativeAppKey\"")
+            buildConfigField("String", "KAKAO_NATIVE_APP_KEY", "\"$kakaoKeyLiteral\"")
         }
         release {
             isMinifyEnabled = false
             // 운영 주소는 미정. 반드시 https. 배포 전에 -PapiBaseUrl 로 지정한다.
             buildConfigField("String", "API_BASE_URL", "\"${apiBaseUrl ?: "https://api.bbolbbol.invalid/"}\"")
-            buildConfigField("String", "KAKAO_NATIVE_APP_KEY", "\"$kakaoNativeAppKey\"")
+            buildConfigField("String", "KAKAO_NATIVE_APP_KEY", "\"$kakaoKeyLiteral\"")
         }
     }
     compileOptions {
