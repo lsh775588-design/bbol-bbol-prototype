@@ -76,6 +76,7 @@
 - 최종 정리 문서: `docs/reports/final-report.md`(구현 기능, 기술, Notion과 달라진 점, 사용자 결정 A1~A8, 주의점). 사용자 결정 문서는 Claude 문서 "뽈뽈 사용자 결정·준비 사항"(https://claude.ai/artifact/5dTCTDe98WT8QhG1gE6wH1).
 
 ### 3단계 이후에 한 일 (최신순)
+- **카카오맵 SDK 교체**(`feat/11-kakao-map`, 병합 전): osmdroid를 카카오맵 SDK 2.15.2로 바꿨다. 키는 `app/local.properties`의 `KAKAO_NATIVE_APP_KEY`(네이티브 앱 키, 기존 SnapSpot 앱의 키를 공유. 새 앱은 월렛 필요). SDK에 x86 라이브러리가 없어 APK가 arm 전용이므로 **x86_64 에뮬레이터에서는 안 되고 arm64 실기기로 확인**한다. 실기기는 휴대폰 확인용 복제본 `C:\dev\bbolbbol-phone`(별도 저장소, debug에서 HTTP 전체 허용)에서 `adb reverse tcp:8120 tcp:8120` 후 `-PapiBaseUrl=http://localhost:8120/`로 빌드한다. 로그에 키가 찍히니 logcat은 키 줄을 걸러 본다. 보고서 `docs/reports/stage-6-kakao-map.md`, 스크린샷 `docs/screenshots/stage-6/`.
 - **홈 "진행 중인 퀘스트"**(`feat/10-home-ongoing`, 병합됨): 받은 퀘스트를 카드로 표시, 포기, 빈 상태. 보고서 `docs/reports/stage-5-home.md`, 스크린샷 `docs/screenshots/stage-5/`.
 - **지도 개선과 "퀘스트 받기" 단계**(`feat/9-map-quest`, 병합됨): 흐리게 처리한 배경 지도, 카테고리 핀, 내 위치 점, 핀 탭 → 퀘스트 받기 → 도착 인증. 받은 퀘스트는 앱 안(`QuestBook`, SharedPreferences, 사용자·장소·KST 날짜별, 자정 만료)에만 저장하고 서버는 모른다. 이는 Notion 명세와 다르다(`docs/reports/stage-3-map.md`). 스크린샷 `docs/screenshots/stage-4/`.
 - **에뮬레이터 재검증 2회**(`stage-3-recheck.md`, `stage-3-recheck2.md`)와 앱 버그 수정(`stage-3-fix.md`): 가입·카카오 직후 온보딩 이동(NavHost 시작 화면 고정), 홈·마이 재진입 갱신 등.

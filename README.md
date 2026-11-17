@@ -63,7 +63,7 @@
 
 ### 3. 지도: 장소 찾기와 퀘스트 받기
 
-- 종로구 장소를 **카테고리 핀**으로 표시하고, 파란 점은 내 위치입니다. (OpenStreetMap)
+- 종로구 장소를 **카테고리 핀**으로 표시하고, 파란 점은 내 위치입니다. (카카오맵)
 - 카테고리 필터(카페, 공원, 쇼핑센터, 영화관, 도서관 등)와 "뽈뽈 추천" 바로가기
 - 핀을 누르면 장소 정보(주소, 도착 시 받는 포인트, 오늘 방문 여부)가 뜨고 **퀘스트 받기**를 누를 수 있습니다.
 - 핀 모양으로 상태를 구분합니다: 받지 않음, 진행 중, 오늘 완료(✔).
@@ -153,7 +153,7 @@
 **앱 (`app/`)**
 - Kotlin 2.2, Jetpack Compose(Material3), Navigation Compose
 - Retrofit + OkHttp + kotlinx-serialization
-- osmdroid(OpenStreetMap, API 키 불필요), Coil
+- 카카오맵 SDK v2 2.15.2(네이티브 앱 키 필요), Coil
 - EncryptedSharedPreferences(토큰 저장)
 - minSdk 26, targetSdk 36
 
@@ -200,6 +200,8 @@ scripts/     보조 스크립트
    adb install -r app/build/outputs/apk/debug/app-debug.apk
    ```
    `app/local.properties`에 `sdk.dir=<Android SDK 경로>`가 필요합니다.
+   지도(카카오맵)를 쓰려면 같은 파일에 `KAKAO_NATIVE_APP_KEY=<카카오 네이티브 앱 키>`도 넣습니다. 키가 없어도 빌드는 되지만 지도 화면에 "지도 키가 설정되지 않았어요"만 나옵니다. 카카오 개발자 콘솔의 해당 앱에 Android 플랫폼(패키지명 `com.bbolbbol.app`, 디버그 키 해시)이 등록돼 있고 카카오맵이 켜져 있어야 합니다.
+   카카오맵 SDK의 네이티브 라이브러리에는 x86/x86_64가 없어 APK를 arm 전용(arm64-v8a, armeabi-v7a)으로 만듭니다. 그래서 x86_64 에뮬레이터에서는 지도가 동작하지 않거나 설치가 안 될 수 있고, **arm64 실기기에서 확인**했습니다. 실기기는 USB를 꽂고 `adb reverse tcp:8120 tcp:8120` 후 `-PapiBaseUrl=http://localhost:8120/`로 빌드하면 같은 와이파이가 아니어도 서버에 연결됩니다.
 3. **위치 지정** (경복궁)
    ```bash
    adb emu geo fix 126.9780 37.5796

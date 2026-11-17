@@ -87,7 +87,7 @@
 | 언어, UI | Kotlin 2.2.20, Jetpack Compose(BOM 2025.09.00), Material3 |
 | 네트워크 | Retrofit 3.0.0, OkHttp 4.12.0, kotlinx-serialization 1.9.0 |
 | 내비게이션 | Navigation Compose 2.9.4 |
-| 지도 | osmdroid 6.1.20(OpenStreetMap, API 키 불필요) |
+| 지도 | 카카오맵 SDK v2 2.15.2(네이티브 앱 키 필요, `local.properties`의 `KAKAO_NATIVE_APP_KEY`). 이전에는 osmdroid(OSM)였다(`stage-6-kakao-map.md`) |
 | 토큰 저장 | EncryptedSharedPreferences(security-crypto) |
 | 빌드 | AGP 8.13.0, Gradle 8.14.3, compileSdk와 targetSdk 36, minSdk 26 |
 | 이미지 | Coil |
@@ -154,6 +154,8 @@
 - 장소 좌표와 주소는 공개 지식 기반의 대략값(샘플)이고 일부는 실제 매장이 아니라 "샘플" 표시다. 팀 검토가 필요하다.
 - 실제 PostgreSQL에서는 `places.created_at` 기본값이 DB 세션 시간대를 따라 서버(Asia/Seoul)와 다를 수 있다(11절 O).
 - 샘플 계정으로 확인할 때는 `docs/local-demo.md`(서버 복제본의 `docs/`)를 본다.
+- **카카오맵 키와 쿼터:** 무료 일간 쿼터는 카카오맵을 처음 활성화한 앱에만 주어지고, 새 앱에서 켜려면 비즈월렛 연결과 요금이 필요하다. 지금은 기존 앱에 이 앱의 Android 플랫폼을 추가해 키를 공유한다. 정식 배포 전에 별도 앱과 월렛 연결을 검토한다. 카카오 SDK가 인증 요청 헤더(키 포함)를 logcat에 찍으므로 로그를 공유할 때 키를 지운다.
+- **카카오맵 SDK는 x86/x86_64 네이티브 라이브러리가 없다.** APK는 arm 전용이라 x86_64 에뮬레이터와 일부 x86 기기, Chromebook에서는 설치나 지도가 안 된다. R8을 켜면 `-keep class com.kakao.vectormap.** { *; }`와 `-keep interface com.kakao.vectormap.**` 규칙이 필요하다.
 
 ## 8. 네가 결정해야 할 것
 1. 서버를 팀 저장소에 올릴 시점과 방식("올려줘"라고 하기 전에는 하지 않는다). 올릴 때 7절의 변경 사항을 팀에 알린다.
