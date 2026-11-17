@@ -1,0 +1,10 @@
+{
+  "method": "GET",
+  "path": "/rankings/users",
+  "auth": true,
+  "query": {
+    "period": "WEEK",
+    "size": 10
+  },
+  "requiredQuery": ["period"]
+}

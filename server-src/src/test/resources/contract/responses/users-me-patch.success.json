@@ -1,0 +1,15 @@
+{
+  "endpoint": "PATCH /users/me",
+  "case": "success",
+  "httpStatus": 200,
+  "code": "COMMON200",
+  "shape": {
+    "$": "object",
+    "$.code": "string",
+    "$.data": "object",
+    "$.data.nextChangeableAt": "datetime",
+    "$.data.nickname": "string",
+    "$.message": "string",
+    "$.success": "boolean"
+  }
+}

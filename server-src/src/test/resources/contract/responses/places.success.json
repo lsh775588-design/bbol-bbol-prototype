@@ -1,0 +1,29 @@
+{
+  "endpoint": "GET /places",
+  "case": "success",
+  "httpStatus": 200,
+  "code": "COMMON200",
+  "shape": {
+    "$": "object",
+    "$.code": "string",
+    "$.data": "object",
+    "$.data.places": "array",
+    "$.data.places[]": "object",
+    "$.data.places[].category": "string",
+    "$.data.places[].distance": "integer",
+    "$.data.places[].expectedPoint": "integer",
+    "$.data.places[].hotType": "string|null",
+    "$.data.places[].isCompleted": "boolean",
+    "$.data.places[].isHot": "boolean",
+    "$.data.places[].lat": "decimal",
+    "$.data.places[].lng": "decimal",
+    "$.data.places[].name": "string",
+    "$.data.places[].notifyRadius": "integer",
+    "$.data.places[].placeId": "integer",
+    "$.data.places[].radius": "integer",
+    "$.data.places[].rewardPoint": "integer",
+    "$.data.places[].visitedBefore": "boolean",
+    "$.message": "string",
+    "$.success": "boolean"
+  }
+}

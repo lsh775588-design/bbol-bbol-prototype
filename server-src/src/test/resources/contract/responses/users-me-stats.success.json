@@ -1,0 +1,32 @@
+{
+  "endpoint": "GET /users/me/stats",
+  "case": "success",
+  "httpStatus": 200,
+  "code": "COMMON200",
+  "shape": {
+    "$": "object",
+    "$.code": "string",
+    "$.data": "object",
+    "$.data.categories": "array",
+    "$.data.categories[]": "object",
+    "$.data.categories[].category": "string",
+    "$.data.categories[].count": "integer",
+    "$.data.categories[].point": "integer",
+    "$.data.completionCount": "integer",
+    "$.data.endDate": "date",
+    "$.data.period": "string",
+    "$.data.placeCount": "integer",
+    "$.data.previous": "object",
+    "$.data.previous.completionCount": "integer",
+    "$.data.previous.totalPoint": "integer",
+    "$.data.startDate": "date",
+    "$.data.timeline": "array",
+    "$.data.timeline[]": "object",
+    "$.data.timeline[].count": "integer",
+    "$.data.timeline[].label": "date|string",
+    "$.data.timeline[].point": "integer",
+    "$.data.totalPoint": "integer",
+    "$.message": "string",
+    "$.success": "boolean"
+  }
+}

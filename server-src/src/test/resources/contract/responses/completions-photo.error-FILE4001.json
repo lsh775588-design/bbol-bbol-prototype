@@ -1,0 +1,17 @@
+{
+  "endpoint": "POST /completions/{completionId}/photo",
+  "case": "error-FILE4001",
+  "httpStatus": 400,
+  "code": "FILE4001",
+  "shape": {
+    "$": "object",
+    "$.code": "string",
+    "$.data": "object|null",
+    "$.data.errors": "array",
+    "$.data.errors[]": "object",
+    "$.data.errors[].field": "string",
+    "$.data.errors[].reason": "string",
+    "$.message": "string",
+    "$.success": "boolean"
+  }
+}

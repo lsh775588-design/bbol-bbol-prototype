@@ -1,0 +1,13 @@
+{
+  "method": "POST",
+  "path": "/places/{placeId}/completions",
+  "auth": true,
+  "query": {},
+  "requiredQuery": [],
+  "body": {
+    "lat": 37.5796,
+    "lng": 126.977,
+    "accuracy": 12.5,
+    "isMockLocation": false
+  }
+}

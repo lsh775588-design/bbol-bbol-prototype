@@ -1,0 +1,10 @@
+{
+  "method": "GET",
+  "path": "/users/me/stats",
+  "auth": true,
+  "query": {
+    "period": "WEEK",
+    "date": "2026-11-11"
+  },
+  "requiredQuery": ["period"]
+}

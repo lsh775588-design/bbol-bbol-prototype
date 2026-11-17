@@ -168,13 +168,16 @@
 ## 저장소 구성
 
 ```
-app/       Kotlin Android 앱 (Jetpack Compose, Retrofit)
-backend/   초기에 만든 Java 서버. 참고용 구현 (사용자 6개, 장소 3개 API)
-docs/      설계 문서, 단계별 보고서(docs/reports/), UI 프로토타입, 스크린샷(docs/screenshots/)
-scripts/   보조 스크립트
+app/         Kotlin Android 앱 (Jetpack Compose, Retrofit)
+server-src/  서버 (Kotlin, Spring Boot 4.1). 명세 API 28개 구현
+backend/     초기에 만든 Java 서버. 참고용 구현 (사용자 6개, 장소 3개 API)
+docs/        설계 문서, 단계별 보고서(docs/reports/), UI 프로토타입, 스크린샷(docs/screenshots/)
+scripts/     보조 스크립트
 ```
 
-> **서버 코드는 이 저장소에 포함되어 있지 않습니다.** 팀 서버 저장소(`Bbol-Bbol/server`, Kotlin + Spring Boot 4.1 기준)를 로컬에 복제해 API 28개를 이식했고, 그 복제본은 이 저장소에서 제외했습니다. 따라서 이 저장소만으로는 앱이 호출할 전체 서버를 띄울 수 없습니다. `backend/`는 Java/MySQL로 만든 초기 참고 구현이며 일부 API만 있습니다.
+> **`server-src/`는 팀 서버 저장소(`Bbol-Bbol/server`)를 기준으로 이식한 결과의 스냅샷입니다.** 팀 저장소의 `port/integration` 브랜치(커밋 `b425ee6`)에서 추적 파일 330개를 그대로 복사했습니다. 팀 저장소의 코드 구조와 스타일을 따르고, 달라진 점(PostGIS 대신 위경도 컬럼 사용, 로컬은 H2 사용, Flyway 도입 등)은 `docs/reports/port-1-server.md`에 정리했습니다. 이 폴더는 일회성 복사본이라 팀 저장소와 자동으로 동기화되지 않습니다.
+>
+> `backend/`는 Java/MySQL로 먼저 만든 참고 구현이며 일부 API만 있습니다. 앱을 실행하려면 `server-src/`를 쓰세요.
 
 앱은 HTTP 계약만 사용하므로 서버 구현이 바뀌어도 앱에는 영향이 없습니다.
 
@@ -182,13 +185,14 @@ scripts/   보조 스크립트
 
 ## 실행 방법
 
-서버(팀 저장소 스택)가 로컬에 있다고 가정한 절차입니다.
+필요한 것: JDK 21, Android SDK, 에뮬레이터(또는 실기기). 서버는 DB와 Redis 없이 H2(메모리)로 뜹니다.
 
-1. **서버 실행** (local 프로파일, H2 사용)
+1. **서버 실행** (`server-src/`에서, local 프로파일, H2 사용)
    ```bash
+   cd server-src
    SPRING_PROFILES_ACTIVE=local BBOLBBOL_LOCAL_FIXED_USER_ID= ./gradlew bootRun --args='--server.port=8120'
    ```
-   이메일 인증 코드는 서버 로그의 `[LOCAL MAIL]` 줄에 출력됩니다. 서버를 재시작하면 데이터와 로그인이 초기화됩니다.
+   서버가 뜨면 `http://localhost:8120/health`로 확인할 수 있습니다. 이메일 인증 코드는 서버 로그의 `[LOCAL MAIL]` 줄에 출력됩니다. 서버를 재시작하면 데이터와 로그인이 초기화됩니다. 자세한 내용은 [`server-src/docs/local-demo.md`](server-src/docs/local-demo.md)를 보세요.
 2. **앱 빌드와 설치** (에뮬레이터는 호스트를 `10.0.2.2`로 봅니다)
    ```bash
    cd app
@@ -200,11 +204,13 @@ scripts/   보조 스크립트
    ```bash
    adb emu geo fix 126.9780 37.5796
    ```
-4. **데모 계정**: `demo1@example.com` / `demo1234!` (온보딩 완료). `demo2@example.com`은 온보딩 전 상태입니다.
+4. **데모 계정**: `demo1@example.com` / `demo1234!` (온보딩 완료). `demo2@example.com`은 온보딩 전 상태입니다. (모두 로컬 샘플 데이터이며 `local` 프로파일에서만 만들어집니다.)
 
 ---
 
 ## 테스트
+
+서버는 `cd server-src && ./gradlew test`, 앱은 `cd app && ./gradlew testDebugUnitTest`로 실행합니다. 실제 PostgreSQL/Redis 테스트는 `BBOL_IT_PG`, `BBOL_IT_REDIS` 환경변수를 켰을 때만 돕니다.
 
 | 대상 | 결과 |
 |---|---|

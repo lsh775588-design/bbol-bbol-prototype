@@ -1,0 +1,13 @@
+{
+  "endpoint": "GET /places/{placeId}",
+  "case": "error-PLACE404",
+  "httpStatus": 404,
+  "code": "PLACE404",
+  "shape": {
+    "$": "object",
+    "$.code": "string",
+    "$.data": "null",
+    "$.message": "string",
+    "$.success": "boolean"
+  }
+}

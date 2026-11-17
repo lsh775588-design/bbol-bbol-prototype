@@ -1,0 +1,24 @@
+{
+  "endpoint": "GET /rankings/streaks",
+  "case": "success",
+  "httpStatus": 200,
+  "code": "COMMON200",
+  "shape": {
+    "$": "object",
+    "$.code": "string",
+    "$.data": "object",
+    "$.data.me": "object|null",
+    "$.data.me.longestStreakDays": "integer",
+    "$.data.me.nickname": "string",
+    "$.data.me.rank": "integer",
+    "$.data.me.streakDays": "integer",
+    "$.data.rankings": "array",
+    "$.data.rankings[]": "object",
+    "$.data.rankings[].isMe": "boolean",
+    "$.data.rankings[].nickname": "string",
+    "$.data.rankings[].rank": "integer",
+    "$.data.rankings[].streakDays": "integer",
+    "$.message": "string",
+    "$.success": "boolean"
+  }
+}

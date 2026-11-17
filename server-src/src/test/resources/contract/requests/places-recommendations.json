@@ -1,0 +1,11 @@
+{
+  "method": "GET",
+  "path": "/places/recommendations",
+  "auth": true,
+  "query": {
+    "lat": 37.5796,
+    "lng": 126.977,
+    "size": 5
+  },
+  "requiredQuery": ["lat", "lng"]
+}

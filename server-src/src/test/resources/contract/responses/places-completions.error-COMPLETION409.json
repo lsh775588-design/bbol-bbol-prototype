@@ -1,0 +1,13 @@
+{
+  "endpoint": "POST /places/{placeId}/completions",
+  "case": "error-COMPLETION409",
+  "httpStatus": 409,
+  "code": "COMPLETION409",
+  "shape": {
+    "$": "object",
+    "$.code": "string",
+    "$.data": "null",
+    "$.message": "string",
+    "$.success": "boolean"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "method": "POST",
+  "path": "/auth/logout",
+  "auth": true,
+  "query": {},
+  "requiredQuery": []
+}
