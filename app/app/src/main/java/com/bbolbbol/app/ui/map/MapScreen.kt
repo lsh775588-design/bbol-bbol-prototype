@@ -82,6 +82,8 @@ import com.kakao.vectormap.label.LabelStyle
 import com.kakao.vectormap.label.LabelStyles
 import com.kakao.vectormap.label.OrderingType
 import com.kakao.vectormap.shape.DimScreenCover
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
@@ -494,16 +496,18 @@ private fun KakaoMapView(
     }
     val context = LocalContext.current
     var kakaoMap by remember { mutableStateOf<KakaoMap?>(null) }
-    var mapError by remember { mutableStateOf<String?>(null) }
+    var mapError by remember { mutableStateOf<MapErrorKind?>(null) }
+    var attempt by remember { mutableIntStateOf(0) }
     val currentOnMarker by rememberUpdatedState(onMarker)
-    val mapView = remember { MapView(context) }
+    // 다시 시도하면 MapView를 새로 만들어 SDK를 처음부터 시작한다.
+    val mapView = remember(attempt) { MapView(context) }
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     DisposableEffect(lifecycle, mapView) {
         mapView.start(
             object : MapLifeCycleCallback() {
                 override fun onMapDestroy() {}
                 override fun onMapError(error: Exception) {
-                    mapError = "지도를 불러오지 못했어요"
+                    mapError = classifyMapError(error)
                 }
             },
             object : KakaoMapReadyCallback() {
@@ -529,6 +533,7 @@ private fun KakaoMapView(
                         (label.tag as? Long)?.let { currentOnMarker(it) }
                         true
                     }
+                    map.cameraMinLevel = KAKAO_MIN_LEVEL
                     kakaoMap = map
                 }
             },
@@ -603,10 +608,19 @@ private fun KakaoMapView(
         }
     }
     Box(modifier) {
-        AndroidView(factory = { mapView }, modifier = Modifier.fillMaxSize())
-        mapError?.let {
+        key(mapView) { AndroidView(factory = { mapView }, modifier = Modifier.fillMaxSize()) }
+        mapError?.let { kind ->
             Box(Modifier.fillMaxSize().background(BbolColors.Lavender), contentAlignment = Alignment.Center) {
-                Text(it, style = MaterialTheme.typography.bodyMedium, color = BbolColors.VioletDeep)
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(mapErrorMessage(kind), style = MaterialTheme.typography.bodyMedium, color = BbolColors.VioletDeep, textAlign = TextAlign.Center)
+                    if (kind != MapErrorKind.AUTH) {
+                        TextButton(onClick = {
+                            mapError = null
+                            kakaoMap = null
+                            attempt++
+                        }) { Text("다시 시도", color = BbolColors.Violet) }
+                    }
+                }
             }
         }
     }

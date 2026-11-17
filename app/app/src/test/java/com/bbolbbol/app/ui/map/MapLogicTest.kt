@@ -78,4 +78,33 @@ class MapLogicTest {
         assertFalse(isMapKeyConfigured("   "))
         assertTrue(isMapKeyConfigured("abc"))
     }
+
+    @Test
+    fun kakaoLevel_NaN_음수_정확히_반_값() {
+        assertEquals(KAKAO_MIN_LEVEL, kakaoLevel(Double.NaN))
+        assertEquals(KAKAO_MIN_LEVEL, kakaoLevel(-5.0))
+        assertEquals(KAKAO_MIN_LEVEL, kakaoLevel(Double.NEGATIVE_INFINITY))
+        assertEquals(KAKAO_MAX_LEVEL, kakaoLevel(Double.POSITIVE_INFINITY))
+        assertEquals(16, kakaoLevel(15.5))
+        assertEquals(15, kakaoLevel(14.5))
+    }
+
+    @Test
+    fun boundsOf_한_점이면_폭이_0이고_북쪽_여백도_0() {
+        val b = boundsOf(listOf(m(1, 37.57, 126.98)))!!
+        assertEquals(b.south, b.north, 0.0)
+        assertEquals(b.west, b.east, 0.0)
+        assertEquals(0.0, b.latSpan, 0.0)
+        assertEquals(37.57, b.centerLat, 1e-9)
+        assertEquals(b, withNorthMargin(b))
+    }
+
+    @Test
+    fun classifyMapError_네트워크_인증_기타() {
+        val net = com.kakao.vectormap.MapAuthException.CONNECT_TIMEOUT_EXCEPTION
+        assertEquals(MapErrorKind.NETWORK, classifyMapError(com.kakao.vectormap.MapAuthException(net, "t")))
+        assertEquals(MapErrorKind.NETWORK, classifyMapError(com.kakao.vectormap.MapTimeoutException()))
+        assertEquals(MapErrorKind.AUTH, classifyMapError(com.kakao.vectormap.MapAuthException(com.kakao.vectormap.MapAuthException.APP_KEY_INVALID_ERROR, "k")))
+        assertEquals(MapErrorKind.OTHER, classifyMapError(RuntimeException("x")))
+    }
 }

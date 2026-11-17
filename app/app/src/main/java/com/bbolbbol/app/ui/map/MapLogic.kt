@@ -18,7 +18,8 @@ data class MarkerData(
 const val KAKAO_MIN_LEVEL = 11
 const val KAKAO_MAX_LEVEL = 21
 
-fun kakaoLevel(zoom: Double): Int = Math.round(zoom).toInt().coerceIn(KAKAO_MIN_LEVEL, KAKAO_MAX_LEVEL)
+fun kakaoLevel(zoom: Double): Int =
+    if (zoom.isNaN()) KAKAO_MIN_LEVEL else Math.round(zoom.coerceIn(0.0, 30.0)).toInt().coerceIn(KAKAO_MIN_LEVEL, KAKAO_MAX_LEVEL)
 
 /** 둘러보기 모드에서 장소들이 한눈에 들어오게 맞춘 뒤 너무 가깝거나 멀지 않게 14~15로 제한한다. */
 fun clampBrowseLevel(level: Int): Int = level.coerceIn(14, 15)
@@ -66,3 +67,26 @@ fun haloRadiusDp(accuracyMeters: Float?): Float {
 
 /** 지도 키가 설정됐는지. 빈 값이면 지도 대신 안내를 보여 준다. */
 fun isMapKeyConfigured(key: String): Boolean = key.isNotBlank()
+
+/** 지도 오류 종류. 네트워크성은 다시 시도로 복구할 수 있고, 인증 오류(키/해시)는 안내를 유지한다. */
+enum class MapErrorKind { NETWORK, AUTH, OTHER }
+
+fun classifyMapError(e: Exception): MapErrorKind = when {
+    e is com.kakao.vectormap.MapTimeoutException -> MapErrorKind.NETWORK
+    e is com.kakao.vectormap.MapAuthException -> when (e.errorCode) {
+        com.kakao.vectormap.MapAuthException.SOCKET_TIMEOUT_EXCEPTION,
+        com.kakao.vectormap.MapAuthException.CONNECT_TIMEOUT_EXCEPTION,
+        com.kakao.vectormap.MapAuthException.CONNECT_INITIATE_FAILURE,
+        com.kakao.vectormap.MapAuthException.CONNECT_ERROR,
+        -> MapErrorKind.NETWORK
+        com.kakao.vectormap.MapAuthException.APP_KEY_INVALID_ERROR -> MapErrorKind.AUTH
+        else -> MapErrorKind.OTHER
+    }
+    else -> MapErrorKind.OTHER
+}
+
+fun mapErrorMessage(kind: MapErrorKind): String = when (kind) {
+    MapErrorKind.NETWORK -> "네트워크 문제로 지도를 불러오지 못했어요"
+    MapErrorKind.AUTH -> "지도 인증에 실패했어요. 지도 키 설정을 확인해 주세요"
+    MapErrorKind.OTHER -> "지도를 불러오지 못했어요"
+}
