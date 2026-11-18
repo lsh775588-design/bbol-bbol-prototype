@@ -13,6 +13,8 @@
 - 위치 기반 퀘스트 앱: Kotlin + Jetpack Compose (Android)
 - 명세 API 28개 구현, 앱 전 화면 구현, 에뮬레이터 E2E 검증 완료
 - 시간대는 Asia/Seoul, 한 주는 월요일부터 시작합니다.
+- 이 저장소는 **휴대폰에 설치해 확인하는 버전**입니다. USB로 연결한 arm64 실기기(Galaxy A13)에서 확인했고, debug 빌드는 개발 편의를 위해 HTTP 통신을 모두 허용합니다(release에는 영향 없음).
+- API 명세와 Notion 명세 대비 달라진 점은 [`docs/api-spec.md`](docs/api-spec.md)에 있습니다.
 
 ---
 
@@ -192,7 +194,7 @@ scripts/     보조 스크립트
    cd server-src
    SPRING_PROFILES_ACTIVE=local BBOLBBOL_LOCAL_FIXED_USER_ID= ./gradlew bootRun --args='--server.port=8120'
    ```
-   서버가 뜨면 `http://localhost:8120/health`로 확인할 수 있습니다. 이메일 인증 코드는 서버 로그의 `[LOCAL MAIL]` 줄에 출력됩니다. 서버를 재시작하면 데이터와 로그인이 초기화됩니다. 자세한 내용은 [`server-src/docs/local-demo.md`](server-src/docs/local-demo.md)를 보세요.
+   서버가 뜨면 `http://localhost:8120/health`로 확인할 수 있습니다. 서버 DB는 H2 **메모리** DB(`jdbc:h2:mem:...`)라 서버를 끄면 가입한 계정과 포인트, 인증 기록이 모두 사라지고 시작할 때 샘플 데이터만 다시 채워집니다. 이메일 인증 코드는 서버 로그의 `[LOCAL MAIL]` 줄에 출력됩니다. 서버를 재시작하면 데이터와 로그인이 초기화됩니다. 자세한 내용은 [`server-src/docs/local-demo.md`](server-src/docs/local-demo.md)를 보세요.
 2. **앱 빌드와 설치** (에뮬레이터는 호스트를 `10.0.2.2`로 봅니다)
    ```bash
    cd app
@@ -229,7 +231,7 @@ scripts/     보조 스크립트
 
 ## 알려진 한계 (프로토타입)
 
-- **퀘스트 받기는 기기 안에만 저장됩니다.** 앱 안에서만 저장하고(사용자·장소·날짜별, 자정 만료) 서버는 모릅니다. 재설치하거나 다른 기기로 옮기면 사라집니다.
+- **퀘스트 받기는 기기 안에만 저장됩니다.** (서버 저장 기능은 추가 예정) 앱 안에서만 저장하고(사용자·장소·날짜별, 자정 만료) 서버는 모릅니다. 재설치하거나 다른 기기로 옮기면 사라집니다.
 - **미검증 항목**: 실제 카카오 SDK 로그인, 실제 Gmail 발송, R8 난독화 빌드, 실기기와 Android 8~10, 네트워크 끊김 화면, 반경 밖 도착 인증 화면
 - 샘플 장소의 좌표와 주소는 공개 지식 기반의 대략값이며, 일부는 실제 매장이 아닌 샘플입니다.
 - 서버가 앱이 보낸 위치 값을 그대로 믿으므로, 실서비스에서는 기기 증명과 이동 검사 같은 사기 방어가 더 필요합니다.
@@ -239,6 +241,7 @@ scripts/     보조 스크립트
 
 ## 문서
 
+- API 명세서: [`docs/api-spec.md`](docs/api-spec.md) (현재 구현 기준, Notion 명세와 다른 점 포함)
 - 최종 보고서: [`docs/reports/final-report.md`](docs/reports/final-report.md) (구현 기능, 기술, 명세와 달라진 점, 결정 사항, 주의점)
 - 단계별 보고서: [`docs/reports/`](docs/reports/)
 - 스크린샷 모음: [`docs/screenshots/`](docs/screenshots/)
