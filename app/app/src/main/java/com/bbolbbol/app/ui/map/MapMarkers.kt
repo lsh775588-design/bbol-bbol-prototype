@@ -1,26 +1,18 @@
 package com.bbolbbol.app.ui.map
 
 import android.content.Context
-import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.Canvas
-import android.graphics.ColorMatrix
-import android.graphics.ColorMatrixColorFilter
 import android.graphics.Paint
 import android.graphics.Path
-import android.graphics.Point
-import android.graphics.drawable.BitmapDrawable
 import androidx.compose.ui.graphics.toArgb
 import com.bbolbbol.app.ui.theme.BbolColors
-import org.osmdroid.util.GeoPoint
-import org.osmdroid.views.Projection
-import org.osmdroid.views.overlay.Overlay
 
 enum class PinState { NORMAL, ACCEPTED, COMPLETED }
 
 /** 코드로 그린 보라색 핀. 같은 모양은 한 번만 그려 재사용한다. */
 object PinFactory {
-    private val cache = HashMap<String, BitmapDrawable>()
+    private val cache = HashMap<String, Bitmap>()
 
     fun emoji(category: String?): String = when (category) {
         "CAFE" -> "☕"
@@ -34,10 +26,10 @@ object PinFactory {
         else -> "📍"
     }
 
-    fun get(context: Context, category: String?, state: PinState, selected: Boolean, hot: Boolean): BitmapDrawable {
+    fun get(context: Context, category: String?, state: PinState, selected: Boolean, hot: Boolean): Bitmap {
         val key = "$category|$state|$selected|$hot"
         return cache.getOrPut(key) {
-            BitmapDrawable(context.resources, draw(context.resources.displayMetrics.density, category, state, selected, hot))
+            draw(context.resources.displayMetrics.density, category, state, selected, hot)
         }
     }
 
@@ -135,46 +127,38 @@ object PinFactory {
     }
 }
 
-/** 내 위치 점과 오차 반경 후광. */
-class MyLocationDot(private val lat: Double, private val lng: Double, private val accuracyMeters: Float?) : Overlay() {
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val point = Point()
+/** 내 위치 점과 오차 반경 후광을 한 장의 비트맵으로 그린다(지도 위 라벨로 쓴다). */
+object MyLocationIcon {
+    private val cache = HashMap<String, Bitmap>()
 
-    override fun draw(canvas: Canvas, projection: Projection) {
-        projection.toPixels(GeoPoint(lat, lng), point)
-        val x = point.x.toFloat()
-        val y = point.y.toFloat()
-        val density = Resources.getSystem().displayMetrics.density
-        val acc = (accuracyMeters ?: 40f).coerceAtLeast(25f)
-        val haloPx = projection.metersToPixels(acc).coerceIn(18f * density, 90f * density)
+    fun get(context: Context, accuracyMeters: Float?): Bitmap {
+        val halo = haloRadiusDp(accuracyMeters)
+        val density = context.resources.displayMetrics.density
+        return cache.getOrPut("$density|$halo") { draw(density, halo) }
+    }
+
+    private fun draw(density: Float, haloDp: Float): Bitmap {
+        val haloPx = haloDp * density
+        val size = ((haloPx + 4f * density) * 2).toInt()
+        val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+        val c = Canvas(bmp)
+        val x = size / 2f
+        val y = size / 2f
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG)
         paint.style = Paint.Style.FILL
         paint.color = 0x2E7B5CE6
-        canvas.drawCircle(x, y, haloPx, paint)
+        c.drawCircle(x, y, haloPx, paint)
         paint.style = Paint.Style.STROKE
         paint.strokeWidth = 1.5f * density
         paint.color = 0x667B5CE6
-        canvas.drawCircle(x, y, haloPx, paint)
+        c.drawCircle(x, y, haloPx, paint)
         paint.style = Paint.Style.FILL
         paint.color = 0xFFFFFFFF.toInt()
         paint.setShadowLayer(3f * density, 0f, 1f * density, 0x44000000)
-        canvas.drawCircle(x, y, 9f * density, paint)
+        c.drawCircle(x, y, 9f * density, paint)
         paint.clearShadowLayer()
         paint.color = 0xFF4F7CF0.toInt()
-        canvas.drawCircle(x, y, 6.5f * density, paint)
+        c.drawCircle(x, y, 6.5f * density, paint)
+        return bmp
     }
-}
-
-/** 베이스 지도를 옅고 차분하게: 채도를 낮추고 밝게 해서 핀이 눈에 띄게 한다. */
-fun softTileFilter(): ColorMatrixColorFilter {
-    val m = ColorMatrix().apply { setSaturation(0.15f) }
-    val lift = ColorMatrix(
-        floatArrayOf(
-            0.7f, 0f, 0f, 0f, 70f,
-            0f, 0.7f, 0f, 0f, 68f,
-            0f, 0f, 0.7f, 0f, 80f,
-            0f, 0f, 0f, 1f, 0f,
-        ),
-    )
-    m.postConcat(lift)
-    return ColorMatrixColorFilter(m)
 }
