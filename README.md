@@ -5,8 +5,8 @@
 장소가 곧 퀘스트입니다. 지도에서 가고 싶은 장소의 퀘스트를 받고, 그곳에 실제로 도착해 **도착 인증**을 하면 포인트를 받습니다. 모은 포인트는 통계와 랭킹으로 확인할 수 있습니다.
 
 <p align="center">
-  <img src="docs/screenshots/stage-5/04-home-two-ongoing.png" width="240" alt="홈 화면">
-  <img src="docs/screenshots/stage-6/kakao-map-phone.png" width="240" alt="퀘스트 지도(카카오맵, 실기기)">
+  <img src="docs/screenshots/stage-7/05-home-ongoing.png" width="240" alt="홈 화면(실기기)">
+  <img src="docs/screenshots/stage-7/01-map-overview.png" width="240" alt="퀘스트 지도(카카오맵, 실기기)">
   <img src="docs/screenshots/stage-4/05-arrival-success.png" width="240" alt="도착 인증 완료">
 </p>
 
@@ -41,7 +41,7 @@
 
 > 에뮬레이터(AVD `Medium_Phone`)에서 실제 서버와 연결해 찍은 화면입니다. 위치는 경복궁으로 고정했습니다.
 >
-> 지도 화면(위 첫 장과 3번 항목의 첫 장)은 카카오맵으로 바꾼 뒤 arm64 실기기(Galaxy A13)에서 찍은 사진입니다. 3·4번 항목의 나머지 사진은 지도가 OpenStreetMap이던 때의 에뮬레이터 화면이라 배경 지도가 지금과 다릅니다. 카카오맵 SDK는 x86_64 에뮬레이터에서 동작하지 않아 새 사진은 실기기로 다시 찍어야 합니다.
+> 홈, 지도, 퀘스트 받기 화면은 카카오맵으로 바꾼 뒤 arm64 실기기(Galaxy A13)에서 찍은 사진입니다(`docs/screenshots/stage-7/`). 도착 인증 성공, 오늘 완료 핀, 반경 밖 오류 같은 화면은 실기기 GPS로는 만들 수 없어 지도가 OpenStreetMap이던 때의 에뮬레이터 사진을 그대로 썼습니다. 이 사진들은 배경 지도가 지금과 다릅니다. 카카오맵 SDK는 x86_64 에뮬레이터에서 동작하지 않습니다.
 
 ### 1. 시작하기: 로그인, 회원가입, 온보딩
 
@@ -60,7 +60,7 @@
 - **뽈뽈 추천**: 뽈뽈이가 고른 추천 장소(HOT)를 가로로 넘겨 봅니다.
 
 <p align="center">
-  <img src="docs/screenshots/stage-5/04-home-two-ongoing.png" width="240" alt="홈: 진행 중인 퀘스트 2개">
+  <img src="docs/screenshots/stage-7/05-home-ongoing.png" width="240" alt="홈: 진행 중인 퀘스트(실기기)">
   <img src="docs/screenshots/stage-5/01-home-empty.png" width="240" alt="홈: 진행 중인 퀘스트 없음">
   <img src="docs/screenshots/stage-5/07-home-after-completion.png" width="240" alt="홈: 인증 후">
 </p>
@@ -74,9 +74,9 @@
 - 위치 권한이 없으면 **둘러보기 모드**로 지도만 볼 수 있습니다. (인증은 불가)
 
 <p align="center">
-  <img src="docs/screenshots/stage-6/kakao-map-phone.png" width="240" alt="지도 전체 보기(카카오맵, 실기기)">
-  <img src="docs/screenshots/stage-4/02-pin-sheet-accept.png" width="240" alt="장소 정보와 퀘스트 받기">
-  <img src="docs/screenshots/stage-4/08-pin-states.png" width="240" alt="핀 상태 표시">
+  <img src="docs/screenshots/stage-7/01-map-overview.png" width="240" alt="지도 전체 보기(카카오맵, 실기기)">
+  <img src="docs/screenshots/stage-7/02-pin-sheet-accept.png" width="240" alt="장소 정보와 퀘스트 받기(실기기)">
+  <img src="docs/screenshots/stage-7/04-map-ongoing-pin.png" width="240" alt="진행 중 핀 표시(실기기)">
 </p>
 
 ### 4. 도착 인증과 사진 보너스
@@ -84,7 +84,7 @@
 장소 반경 안에서 인증하면 포인트가 적립됩니다. 서버가 위치, 정확도, 모의 위치(가짜 GPS) 여부, 하루 1회 제한을 검사합니다. 반경 밖이면 거절되고, 첫 방문이면 **사진을 올려 +50P**를 더 받을 수 있습니다. 사진은 서버에서 위치 정보(EXIF)를 지우고 다시 저장합니다.
 
 <p align="center">
-  <img src="docs/screenshots/stage-4/03-quest-accepted.png" width="240" alt="퀘스트 받음">
+  <img src="docs/screenshots/stage-7/03-quest-accepted.png" width="240" alt="퀘스트 받음(실기기)">
   <img src="docs/screenshots/stage-4/05-arrival-success.png" width="240" alt="도착 인증 완료와 사진 올리기">
   <img src="docs/screenshots/stage-4/06-sheet-completed-today.png" width="240" alt="오늘 완료">
 </p>
