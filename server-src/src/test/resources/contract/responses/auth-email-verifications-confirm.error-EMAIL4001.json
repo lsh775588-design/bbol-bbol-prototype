@@ -1,0 +1,14 @@
+{
+  "endpoint": "POST /auth/email-verifications/confirm",
+  "case": "error-EMAIL4001",
+  "httpStatus": 400,
+  "code": "EMAIL4001",
+  "shape": {
+    "$": "object",
+    "$.code": "string",
+    "$.data": "object",
+    "$.data.remainingAttempts": "integer",
+    "$.message": "string",
+    "$.success": "boolean"
+  }
+}

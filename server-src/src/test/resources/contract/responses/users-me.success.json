@@ -1,0 +1,19 @@
+{
+  "endpoint": "GET /users/me",
+  "case": "success",
+  "httpStatus": 200,
+  "code": "COMMON200",
+  "shape": {
+    "$": "object",
+    "$.code": "string",
+    "$.data": "object",
+    "$.data.createdAt": "datetime",
+    "$.data.email": "string|null",
+    "$.data.loginType": "string",
+    "$.data.nickname": "string|null",
+    "$.data.onboardingCompleted": "boolean",
+    "$.data.userId": "integer",
+    "$.message": "string",
+    "$.success": "boolean"
+  }
+}

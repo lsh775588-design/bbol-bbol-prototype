@@ -1,0 +1,29 @@
+{
+  "endpoint": "GET /rankings/users",
+  "case": "success",
+  "httpStatus": 200,
+  "code": "COMMON200",
+  "shape": {
+    "$": "object",
+    "$.code": "string",
+    "$.data": "object",
+    "$.data.endDate": "date",
+    "$.data.me": "object|null",
+    "$.data.me.completionCount": "integer",
+    "$.data.me.nickname": "string",
+    "$.data.me.point": "integer",
+    "$.data.me.rank": "integer",
+    "$.data.period": "string",
+    "$.data.rankings": "array",
+    "$.data.rankings[]": "object",
+    "$.data.rankings[].completionCount": "integer",
+    "$.data.rankings[].isMe": "boolean",
+    "$.data.rankings[].nickname": "string",
+    "$.data.rankings[].point": "integer",
+    "$.data.rankings[].rank": "integer",
+    "$.data.startDate": "date",
+    "$.data.updatedAt": "datetime",
+    "$.message": "string",
+    "$.success": "boolean"
+  }
+}

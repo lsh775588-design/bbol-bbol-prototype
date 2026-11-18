@@ -1,0 +1,13 @@
+{
+  "endpoint": "POST /completions/{completionId}/photo",
+  "case": "error-FILE413",
+  "httpStatus": 413,
+  "code": "FILE413",
+  "shape": {
+    "$": "object",
+    "$.code": "string",
+    "$.data": "null",
+    "$.message": "string",
+    "$.success": "boolean"
+  }
+}

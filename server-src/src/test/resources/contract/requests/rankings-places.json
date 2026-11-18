@@ -1,0 +1,11 @@
+{
+  "method": "GET",
+  "path": "/rankings/places",
+  "auth": true,
+  "query": {
+    "period": "WEEK",
+    "category": "CAFE",
+    "size": 10
+  },
+  "requiredQuery": []
+}

@@ -1,0 +1,37 @@
+# 테스트용 설정: Docker 없이 H2(PostgreSQL 호환 모드)로 돈다.
+spring:
+  datasource:
+    url: jdbc:h2:mem:bbolbbol-test;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  flyway:
+    locations: classpath:db/migration
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  data:
+    redis:
+      connect-timeout: 1s
+      timeout: 1s
+
+management:
+  health:
+    redis:
+      enabled: false
+
+# DEV ONLY: 테스트용 가짜 키
+jwt:
+  secret: dev-only-FAKE-test-secret-do-not-use-in-prod-0123456789
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+
+# 테스트 중 올린 파일이 프로젝트 폴더를 어지럽히지 않게 build 아래에 둔다.
+storage:
+  type: local
+  local:
+    base-dir: build/test-uploads

@@ -1,0 +1,83 @@
+# ${환경변수:기본값} 형식. 기본값은 로컬 개발용이고, 배포할 때는 환경 변수로 덮어씀
+# 기본값이 없는 값(DB_USERNAME, DB_PASSWORD)은 .env 파일이나 환경 변수로 꼭 넣어야 함
+spring:
+  application:
+    name: bbolbbol-server
+
+  config:
+    # 프로젝트 루트의 .env 파일을 읽어서 ${...} 값으로 씀. 파일이 없어도 에러는 나지 않음
+    import: optional:file:.env[.properties]
+
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:bbolbbol}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      # 스키마는 Flyway(db/migration)가 소유함. Hibernate는 검증만 하고 테이블을 만들지 않음
+      ddl-auto: ${JPA_DDL_AUTO:validate}
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          time_zone: Asia/Seoul
+    show-sql: ${JPA_SHOW_SQL:false}
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
+  mail:
+    # Gmail SMTP: 구글 계정에서 "앱 비밀번호"를 발급받아 MAIL_PASSWORD에 넣으면 됨
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+
+  servlet:
+    multipart:
+      # 인증 사진 최대 10MB
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+jwt:
+  secret: ${JWT_SECRET}
+  access-token-expiration: ${JWT_EXPIRATION:1h}
+  refresh-token-expiration: ${JWT_REFRESH_EXPIRATION:14d}
+
+storage:
+  # 인증 사진 저장 위치. 기본값이 없다: local, test 프로파일은 yml에서 local로 정하고,
+  # 그 밖의 프로파일은 STORAGE_TYPE을 꼭 정해야 기동한다(StorageTypeGuard). 빠뜨렸을 때 조용히 로컬 디스크에 쓰지 않게 하려는 것이다.
+  type: ${STORAGE_TYPE:}
+  local:
+    base-dir: ${STORAGE_LOCAL_DIR:./uploads}
+
+logging:
+  level:
+    # 제약 위반 메시지(Key (email)=(a@b.com) 등)에 개인정보가 들어 있어 Hibernate가 직접 로그에 찍지 않게 한다.
+    # 예외는 GlobalExceptionHandler가 값을 지운 형태로 남긴다.
+    org.hibernate.engine.jdbc.spi.SqlExceptionHelper: 'OFF'
+
+springdoc:
+  # API 문서는 기본 꺼짐. local, test 프로파일에서만 켠다(운영에 엔드포인트 목록이 공개되지 않게 함).
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+    path: /swagger-ui.html
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  health:
+    mail:
+      # 메일 서버 상태 때문에 서버 전체가 DOWN으로 보이지 않게 제외
+      enabled: false

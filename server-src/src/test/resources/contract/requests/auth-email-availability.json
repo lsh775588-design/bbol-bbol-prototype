@@ -1,0 +1,9 @@
+{
+  "method": "GET",
+  "path": "/auth/email-availability",
+  "auth": false,
+  "query": {
+    "email": "contract-new@example.com"
+  },
+  "requiredQuery": ["email"]
+}

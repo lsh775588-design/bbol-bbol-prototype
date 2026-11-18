@@ -1,0 +1,47 @@
+# local 프로파일: Docker(PostgreSQL, Redis) 없이 이 PC에서 기동한다.
+# 실행: SPRING_PROFILES_ACTIVE=local ./gradlew bootRun
+spring:
+  datasource:
+    # H2 인메모리, PostgreSQL 호환 모드. 테스트용 DB와 이름을 다르게 둔다.
+    url: jdbc:h2:mem:bbolbbol-local;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  flyway:
+    # 개발 전용 시드는 db/seed-local에 둔다 (local 프로파일에서만 읽음)
+    locations: classpath:db/migration,classpath:db/seed-local
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  data:
+    redis:
+      # Lettuce는 첫 명령을 보낼 때 연결하므로 Redis가 없어도 기동은 됨. 연결이 필요한 기능만 1초 뒤 실패함
+      connect-timeout: 1s
+      timeout: 1s
+
+management:
+  health:
+    redis:
+      # Redis가 없어도 /actuator/health가 DOWN이 되지 않게 제외
+      enabled: false
+
+storage:
+  type: local
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+
+# DEV ONLY: 아래 값은 일부러 가짜로 적은 개발용 값이다. 운영에서는 JWT_SECRET 환경 변수를 쓴다.
+jwt:
+  secret: dev-only-FAKE-local-secret-do-not-use-in-prod-0123456789
+
+bbolbbol:
+  local:
+    # DEV ONLY: 유효한 토큰이 없으면 이 userId로 인증한다 (LocalFixedUserFilter). 비우면 꺼짐.
+    fixed-user-id: 1
+    # DEV ONLY: local 프로파일 전용 가짜 이메일 인증 토큰(LocalVerificationTokenVerifier).
+    # signup의 verificationToken에 "<이 값>:<가입할 이메일>" 형태로 넣는다. 다른 프로파일에는 이 값이 없다.
+    verification-token: DEV-ONLY-FAKE-verification-token

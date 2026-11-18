@@ -7,7 +7,8 @@
 - 기준 문서(작업 전에 확인)
   - Notion 허브: https://app.notion.com/p/BbolBbol-e9c5b77d383d828ca0e1810fc5bd8b1f (API 명세서, Gray Area 결정 사항 포함)
   - 검토 문서: https://claude.ai/artifact/UxFFkRTkXhS4NJd6JjtSCi (쟁점 8개, 착수 가능한 API, 담당표)
-- 작업 폴더: `C:\dev\bbolbbol`
+- 작업 폴더: `C:\dev\bbolbbol-phone` (**2026-11-18 사용자 결정으로 기본 작업 폴더.** 뽈뽈이 모바일 앱 개발 수업이라 휴대폰에 설치해 확인해야 하기 때문이다.)
+  - 원본 `C:\dev\bbolbbol`은 보관용이다. 두 폴더는 **별도 git 저장소**이고 앱, 서버, API 코드는 같다. 다른 점은 이 폴더의 `app/app/src/debug/res/xml/network_security_config.xml`이 debug에서 HTTP를 모두 허용한다는 것(release에는 영향 없음)과, 팀 서버 복제본 `server/`가 원본에만 있다는 것이다. 서버는 원본 `C:\dev\bbolbbol\server`에서 실행한다(`server-src`는 같은 코드의 복사본이며 이 폴더에서 실행해 보지는 않았다). 원본에만 있는 브랜치: `docs/12-api-comparison`. 새 작업은 이 폴더에서 하고, 원본에 옮길 일이 있으면 `git fetch <폴더>`와 `cherry-pick`으로 옮긴다.
   - `backend/` Spring Boot 3.x, Java 21, Gradle, JPA, Spring Security + JWT, MySQL 8, Redis
   - `app/` Kotlin Android, Jetpack Compose, Retrofit. **프론트는 Kotlin으로 확정**이다. Notion 기술스택 페이지의 React Native + Expo는 틀린 내용이니 따르지 않는다. 앱이 바뀌어도 `backend/`에 영향이 없게 설계한다.
   - `docs/` 설계 문서, `docs/reports/` 단계별 보고서
@@ -76,6 +77,7 @@
 - 최종 정리 문서: `docs/reports/final-report.md`(구현 기능, 기술, Notion과 달라진 점, 사용자 결정 A1~A8, 주의점). 사용자 결정 문서는 Claude 문서 "뽈뽈 사용자 결정·준비 사항"(https://claude.ai/artifact/5dTCTDe98WT8QhG1gE6wH1).
 
 ### 3단계 이후에 한 일 (최신순)
+- **카카오맵 SDK 교체**(`feat/11-kakao-map`, 병합 전): osmdroid를 카카오맵 SDK 2.15.2로 바꿨다. 키는 `app/local.properties`의 `KAKAO_NATIVE_APP_KEY`(네이티브 앱 키, 기존 SnapSpot 앱의 키를 공유. 새 앱은 월렛 필요). SDK에 x86 라이브러리가 없어 APK가 arm 전용이므로 **x86_64 에뮬레이터에서는 안 되고 arm64 실기기로 확인**한다. 실기기는 휴대폰 확인용 복제본 `C:\dev\bbolbbol-phone`(별도 저장소, debug에서 HTTP 전체 허용)에서 `adb reverse tcp:8120 tcp:8120` 후 `-PapiBaseUrl=http://localhost:8120/`로 빌드한다. 로그에 키가 찍히니 logcat은 키 줄을 걸러 본다. 보고서 `docs/reports/stage-6-kakao-map.md`, 스크린샷 `docs/screenshots/stage-6/`.
 - **홈 "진행 중인 퀘스트"**(`feat/10-home-ongoing`, 병합됨): 받은 퀘스트를 카드로 표시, 포기, 빈 상태. 보고서 `docs/reports/stage-5-home.md`, 스크린샷 `docs/screenshots/stage-5/`.
 - **지도 개선과 "퀘스트 받기" 단계**(`feat/9-map-quest`, 병합됨): 흐리게 처리한 배경 지도, 카테고리 핀, 내 위치 점, 핀 탭 → 퀘스트 받기 → 도착 인증. 받은 퀘스트는 앱 안(`QuestBook`, SharedPreferences, 사용자·장소·KST 날짜별, 자정 만료)에만 저장하고 서버는 모른다. 이는 Notion 명세와 다르다(`docs/reports/stage-3-map.md`). 스크린샷 `docs/screenshots/stage-4/`.
 - **에뮬레이터 재검증 2회**(`stage-3-recheck.md`, `stage-3-recheck2.md`)와 앱 버그 수정(`stage-3-fix.md`): 가입·카카오 직후 온보딩 이동(NavHost 시작 화면 고정), 홈·마이 재진입 갱신 등.
@@ -92,7 +94,8 @@
 ### 데모 실행 방법 (이 PC)
 1. 서버: `C:\dev\bbolbbol\server`에서 `SPRING_PROFILES_ACTIVE=local BBOLBBOL_LOCAL_FIXED_USER_ID= ./gradlew bootRun --args='--server.port=8120'`(백그라운드). 서버를 켜 둔 동안 그 폴더의 `./gradlew --stop`을 쓰지 않는다(서버가 같이 꺼진다). 재시작하면 데이터와 로그인이 초기화된다. 이메일 인증 코드는 서버 로그의 `[LOCAL MAIL]` 줄에 찍힌다.
 2. 에뮬레이터: AVD `Medium_Phone`(`emulator -avd Medium_Phone`, adb `emulator-5554`). 위치는 `adb emu geo fix 126.9780 37.5796`(경복궁).
-3. 앱 빌드와 설치: `cd app && ./gradlew assembleDebug -PapiBaseUrl=http://10.0.2.2:8120/` 후 `adb install -r app/build/outputs/apk/debug/app-debug.apk`. `app/local.properties`에 `sdk.dir=C:/Users/f/AppData/Local/Android/Sdk`(슬래시) 필요.
+3. **실기기(기본)**: USB로 연결하고 `adb reverse tcp:8120 tcp:8120` 후 `cd app && ./gradlew assembleDebug -PapiBaseUrl=http://localhost:8120/`, `adb -s <기기> install -r app/build/outputs/apk/debug/app-debug.apk`. 같은 와이파이에서 쓰려면 PC IP로 빌드하고 방화벽을 확인한다. USB를 뽑으면 reverse가 풀린다. 기기는 Galaxy A13(arm64). 카카오맵은 x86_64 에뮬레이터에서 안 된다(`docs/reports/stage-6-kakao-map.md`).
+   에뮬레이터: `cd app && ./gradlew assembleDebug -PapiBaseUrl=http://10.0.2.2:8120/` 후 `adb install -r app/build/outputs/apk/debug/app-debug.apk`. `app/local.properties`에 `sdk.dir=C:/Users/f/AppData/Local/Android/Sdk`(슬래시) 필요.
 4. 데모 계정: `demo1@example.com`(뽈뽈이, 온보딩 완료), `demo4@example.com`(종로탐험가), `demo2@example.com`(온보딩 전), 공통 비밀번호 `demo1234!`. 자세한 내용은 `server/docs/local-demo.md`.
 - 메모리가 빠듯하다: Gradle은 한 번에 하나, 에이전트가 모두 쉬는 때만 데몬을 끈다.
 

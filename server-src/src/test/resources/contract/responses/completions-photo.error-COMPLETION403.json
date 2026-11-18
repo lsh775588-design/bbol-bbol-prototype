@@ -1,0 +1,13 @@
+{
+  "endpoint": "POST /completions/{completionId}/photo",
+  "case": "error-COMPLETION403",
+  "httpStatus": 403,
+  "code": "COMPLETION403",
+  "shape": {
+    "$": "object",
+    "$.code": "string",
+    "$.data": "null",
+    "$.message": "string",
+    "$.success": "boolean"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "endpoint": "POST /auth/signup",
+  "case": "error-USER4092",
+  "httpStatus": 409,
+  "code": "USER4092",
+  "shape": {
+    "$": "object",
+    "$.code": "string",
+    "$.data": "null",
+    "$.message": "string",
+    "$.success": "boolean"
+  }
+}

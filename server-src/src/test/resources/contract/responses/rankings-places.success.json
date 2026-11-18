@@ -1,0 +1,26 @@
+{
+  "endpoint": "GET /rankings/places",
+  "case": "success",
+  "httpStatus": 200,
+  "code": "COMMON200",
+  "shape": {
+    "$": "object",
+    "$.code": "string",
+    "$.data": "object",
+    "$.data.endDate": "date",
+    "$.data.period": "string",
+    "$.data.rankings": "array",
+    "$.data.rankings[]": "object",
+    "$.data.rankings[].address": "string",
+    "$.data.rankings[].category": "string",
+    "$.data.rankings[].completionCount": "integer",
+    "$.data.rankings[].placeId": "integer",
+    "$.data.rankings[].placeName": "string",
+    "$.data.rankings[].rank": "integer",
+    "$.data.rankings[].rewardPoint": "integer",
+    "$.data.startDate": "date",
+    "$.data.updatedAt": "datetime",
+    "$.message": "string",
+    "$.success": "boolean"
+  }
+}

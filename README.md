@@ -5,14 +5,16 @@
 장소가 곧 퀘스트입니다. 지도에서 가고 싶은 장소의 퀘스트를 받고, 그곳에 실제로 도착해 **도착 인증**을 하면 포인트를 받습니다. 모은 포인트는 통계와 랭킹으로 확인할 수 있습니다.
 
 <p align="center">
-  <img src="docs/screenshots/stage-5/04-home-two-ongoing.png" width="240" alt="홈 화면">
-  <img src="docs/screenshots/stage-4/01-map-overview.png" width="240" alt="퀘스트 지도">
+  <img src="docs/screenshots/stage-7/05-home-ongoing.png" width="240" alt="홈 화면(실기기)">
+  <img src="docs/screenshots/stage-7/01-map-overview.png" width="240" alt="퀘스트 지도(카카오맵, 실기기)">
   <img src="docs/screenshots/stage-4/05-arrival-success.png" width="240" alt="도착 인증 완료">
 </p>
 
 - 위치 기반 퀘스트 앱: Kotlin + Jetpack Compose (Android)
 - 명세 API 28개 구현, 앱 전 화면 구현, 에뮬레이터 E2E 검증 완료
 - 시간대는 Asia/Seoul, 한 주는 월요일부터 시작합니다.
+- 이 저장소는 **휴대폰에 설치해 확인하는 버전**입니다. USB로 연결한 arm64 실기기(Galaxy A13)에서 확인했고, debug 빌드는 개발 편의를 위해 HTTP 통신을 모두 허용합니다(release에는 영향 없음).
+- API 명세와 Notion 명세 대비 달라진 점은 [`docs/api-spec.md`](docs/api-spec.md)에 있습니다.
 
 ---
 
@@ -38,6 +40,8 @@
 ## 화면 둘러보기
 
 > 에뮬레이터(AVD `Medium_Phone`)에서 실제 서버와 연결해 찍은 화면입니다. 위치는 경복궁으로 고정했습니다.
+>
+> 홈, 지도, 퀘스트 받기 화면은 카카오맵으로 바꾼 뒤 arm64 실기기(Galaxy A13)에서 찍은 사진입니다(`docs/screenshots/stage-7/`). 도착 인증 성공, 오늘 완료 핀, 반경 밖 오류 같은 화면은 실기기 GPS로는 만들 수 없어 지도가 OpenStreetMap이던 때의 에뮬레이터 사진을 그대로 썼습니다. 이 사진들은 배경 지도가 지금과 다릅니다. 카카오맵 SDK는 x86_64 에뮬레이터에서 동작하지 않습니다.
 
 ### 1. 시작하기: 로그인, 회원가입, 온보딩
 
@@ -56,23 +60,23 @@
 - **뽈뽈 추천**: 뽈뽈이가 고른 추천 장소(HOT)를 가로로 넘겨 봅니다.
 
 <p align="center">
-  <img src="docs/screenshots/stage-5/04-home-two-ongoing.png" width="240" alt="홈: 진행 중인 퀘스트 2개">
+  <img src="docs/screenshots/stage-7/05-home-ongoing.png" width="240" alt="홈: 진행 중인 퀘스트(실기기)">
   <img src="docs/screenshots/stage-5/01-home-empty.png" width="240" alt="홈: 진행 중인 퀘스트 없음">
   <img src="docs/screenshots/stage-5/07-home-after-completion.png" width="240" alt="홈: 인증 후">
 </p>
 
 ### 3. 지도: 장소 찾기와 퀘스트 받기
 
-- 종로구 장소를 **카테고리 핀**으로 표시하고, 파란 점은 내 위치입니다. (OpenStreetMap)
+- 종로구 장소를 **카테고리 핀**으로 표시하고, 파란 점은 내 위치입니다. (카카오맵)
 - 카테고리 필터(카페, 공원, 쇼핑센터, 영화관, 도서관 등)와 "뽈뽈 추천" 바로가기
 - 핀을 누르면 장소 정보(주소, 도착 시 받는 포인트, 오늘 방문 여부)가 뜨고 **퀘스트 받기**를 누를 수 있습니다.
 - 핀 모양으로 상태를 구분합니다: 받지 않음, 진행 중, 오늘 완료(✔).
 - 위치 권한이 없으면 **둘러보기 모드**로 지도만 볼 수 있습니다. (인증은 불가)
 
 <p align="center">
-  <img src="docs/screenshots/stage-4/01-map-overview.png" width="240" alt="지도 전체 보기">
-  <img src="docs/screenshots/stage-4/02-pin-sheet-accept.png" width="240" alt="장소 정보와 퀘스트 받기">
-  <img src="docs/screenshots/stage-4/08-pin-states.png" width="240" alt="핀 상태 표시">
+  <img src="docs/screenshots/stage-7/01-map-overview.png" width="240" alt="지도 전체 보기(카카오맵, 실기기)">
+  <img src="docs/screenshots/stage-7/02-pin-sheet-accept.png" width="240" alt="장소 정보와 퀘스트 받기(실기기)">
+  <img src="docs/screenshots/stage-7/04-map-ongoing-pin.png" width="240" alt="진행 중 핀 표시(실기기)">
 </p>
 
 ### 4. 도착 인증과 사진 보너스
@@ -80,7 +84,7 @@
 장소 반경 안에서 인증하면 포인트가 적립됩니다. 서버가 위치, 정확도, 모의 위치(가짜 GPS) 여부, 하루 1회 제한을 검사합니다. 반경 밖이면 거절되고, 첫 방문이면 **사진을 올려 +50P**를 더 받을 수 있습니다. 사진은 서버에서 위치 정보(EXIF)를 지우고 다시 저장합니다.
 
 <p align="center">
-  <img src="docs/screenshots/stage-4/03-quest-accepted.png" width="240" alt="퀘스트 받음">
+  <img src="docs/screenshots/stage-7/03-quest-accepted.png" width="240" alt="퀘스트 받음(실기기)">
   <img src="docs/screenshots/stage-4/05-arrival-success.png" width="240" alt="도착 인증 완료와 사진 올리기">
   <img src="docs/screenshots/stage-4/06-sheet-completed-today.png" width="240" alt="오늘 완료">
 </p>
@@ -153,7 +157,7 @@
 **앱 (`app/`)**
 - Kotlin 2.2, Jetpack Compose(Material3), Navigation Compose
 - Retrofit + OkHttp + kotlinx-serialization
-- osmdroid(OpenStreetMap, API 키 불필요), Coil
+- 카카오맵 SDK v2 2.15.2(네이티브 앱 키 필요), Coil
 - EncryptedSharedPreferences(토큰 저장)
 - minSdk 26, targetSdk 36
 
@@ -168,13 +172,16 @@
 ## 저장소 구성
 
 ```
-app/       Kotlin Android 앱 (Jetpack Compose, Retrofit)
-backend/   초기에 만든 Java 서버. 참고용 구현 (사용자 6개, 장소 3개 API)
-docs/      설계 문서, 단계별 보고서(docs/reports/), UI 프로토타입, 스크린샷(docs/screenshots/)
-scripts/   보조 스크립트
+app/         Kotlin Android 앱 (Jetpack Compose, Retrofit)
+server-src/  서버 (Kotlin, Spring Boot 4.1). 명세 API 28개 구현
+backend/     초기에 만든 Java 서버. 참고용 구현 (사용자 6개, 장소 3개 API)
+docs/        설계 문서, 단계별 보고서(docs/reports/), UI 프로토타입, 스크린샷(docs/screenshots/)
+scripts/     보조 스크립트
 ```
 
-> **서버 코드는 이 저장소에 포함되어 있지 않습니다.** 팀 서버 저장소(`Bbol-Bbol/server`, Kotlin + Spring Boot 4.1 기준)를 로컬에 복제해 API 28개를 이식했고, 그 복제본은 이 저장소에서 제외했습니다. 따라서 이 저장소만으로는 앱이 호출할 전체 서버를 띄울 수 없습니다. `backend/`는 Java/MySQL로 만든 초기 참고 구현이며 일부 API만 있습니다.
+> **`server-src/`는 팀 서버 저장소(`Bbol-Bbol/server`)를 기준으로 이식한 결과의 스냅샷입니다.** 팀 저장소의 `port/integration` 브랜치(커밋 `b425ee6`)에서 추적 파일 330개를 그대로 복사했습니다. 팀 저장소의 코드 구조와 스타일을 따르고, 달라진 점(PostGIS 대신 위경도 컬럼 사용, 로컬은 H2 사용, Flyway 도입 등)은 `docs/reports/port-1-server.md`에 정리했습니다. 이 폴더는 일회성 복사본이라 팀 저장소와 자동으로 동기화되지 않습니다.
+>
+> `backend/`는 Java/MySQL로 먼저 만든 참고 구현이며 일부 API만 있습니다. 앱을 실행하려면 `server-src/`를 쓰세요.
 
 앱은 HTTP 계약만 사용하므로 서버 구현이 바뀌어도 앱에는 영향이 없습니다.
 
@@ -182,13 +189,14 @@ scripts/   보조 스크립트
 
 ## 실행 방법
 
-서버(팀 저장소 스택)가 로컬에 있다고 가정한 절차입니다.
+필요한 것: JDK 21, Android SDK, 에뮬레이터(또는 실기기). 서버는 DB와 Redis 없이 H2(메모리)로 뜹니다.
 
-1. **서버 실행** (local 프로파일, H2 사용)
+1. **서버 실행** (`server-src/`에서, local 프로파일, H2 사용)
    ```bash
+   cd server-src
    SPRING_PROFILES_ACTIVE=local BBOLBBOL_LOCAL_FIXED_USER_ID= ./gradlew bootRun --args='--server.port=8120'
    ```
-   이메일 인증 코드는 서버 로그의 `[LOCAL MAIL]` 줄에 출력됩니다. 서버를 재시작하면 데이터와 로그인이 초기화됩니다.
+   서버가 뜨면 `http://localhost:8120/health`로 확인할 수 있습니다. 서버 DB는 H2 **메모리** DB(`jdbc:h2:mem:...`)라 서버를 끄면 가입한 계정과 포인트, 인증 기록이 모두 사라지고 시작할 때 샘플 데이터만 다시 채워집니다. 이메일 인증 코드는 서버 로그의 `[LOCAL MAIL]` 줄에 출력됩니다. 서버를 재시작하면 데이터와 로그인이 초기화됩니다. 자세한 내용은 [`server-src/docs/local-demo.md`](server-src/docs/local-demo.md)를 보세요.
 2. **앱 빌드와 설치** (에뮬레이터는 호스트를 `10.0.2.2`로 봅니다)
    ```bash
    cd app
@@ -196,15 +204,19 @@ scripts/   보조 스크립트
    adb install -r app/build/outputs/apk/debug/app-debug.apk
    ```
    `app/local.properties`에 `sdk.dir=<Android SDK 경로>`가 필요합니다.
+   지도(카카오맵)를 쓰려면 같은 파일에 `KAKAO_NATIVE_APP_KEY=<카카오 네이티브 앱 키>`도 넣습니다. 키가 없어도 빌드는 되지만 지도 화면에 "지도 키가 설정되지 않았어요"만 나옵니다. 카카오 개발자 콘솔의 해당 앱에 Android 플랫폼(패키지명 `com.bbolbbol.app`, 디버그 키 해시)이 등록돼 있고 카카오맵이 켜져 있어야 합니다.
+   카카오맵 SDK의 네이티브 라이브러리에는 x86/x86_64가 없어 APK를 arm 전용(arm64-v8a, armeabi-v7a)으로 만듭니다. 그래서 x86_64 에뮬레이터에서는 지도가 동작하지 않거나 설치가 안 될 수 있고, **arm64 실기기에서 확인**했습니다. 실기기는 USB를 꽂고 `adb reverse tcp:8120 tcp:8120` 후 `-PapiBaseUrl=http://localhost:8120/`로 빌드하면 같은 와이파이가 아니어도 서버에 연결됩니다.
 3. **위치 지정** (경복궁)
    ```bash
    adb emu geo fix 126.9780 37.5796
    ```
-4. **데모 계정**: `demo1@example.com` / `demo1234!` (온보딩 완료). `demo2@example.com`은 온보딩 전 상태입니다.
+4. **데모 계정**: `demo1@example.com` / `demo1234!` (온보딩 완료). `demo2@example.com`은 온보딩 전 상태입니다. (모두 로컬 샘플 데이터이며 `local` 프로파일에서만 만들어집니다.)
 
 ---
 
 ## 테스트
+
+서버는 `cd server-src && ./gradlew test`, 앱은 `cd app && ./gradlew testDebugUnitTest`로 실행합니다. 실제 PostgreSQL/Redis 테스트는 `BBOL_IT_PG`, `BBOL_IT_REDIS` 환경변수를 켰을 때만 돕니다.
 
 | 대상 | 결과 |
 |---|---|
@@ -221,7 +233,7 @@ scripts/   보조 스크립트
 
 ## 알려진 한계 (프로토타입)
 
-- **퀘스트 받기는 기기 안에만 저장됩니다.** 앱 안에서만 저장하고(사용자·장소·날짜별, 자정 만료) 서버는 모릅니다. 재설치하거나 다른 기기로 옮기면 사라집니다.
+- **퀘스트 받기는 기기 안에만 저장됩니다.** (서버 저장 기능은 추가 예정) 앱 안에서만 저장하고(사용자·장소·날짜별, 자정 만료) 서버는 모릅니다. 재설치하거나 다른 기기로 옮기면 사라집니다.
 - **미검증 항목**: 실제 카카오 SDK 로그인, 실제 Gmail 발송, R8 난독화 빌드, 실기기와 Android 8~10, 네트워크 끊김 화면, 반경 밖 도착 인증 화면
 - 샘플 장소의 좌표와 주소는 공개 지식 기반의 대략값이며, 일부는 실제 매장이 아닌 샘플입니다.
 - 서버가 앱이 보낸 위치 값을 그대로 믿으므로, 실서비스에서는 기기 증명과 이동 검사 같은 사기 방어가 더 필요합니다.
@@ -231,6 +243,7 @@ scripts/   보조 스크립트
 
 ## 문서
 
+- API 명세서: [`docs/api-spec.md`](docs/api-spec.md) (현재 구현 기준, Notion 명세와 다른 점 포함)
 - 최종 보고서: [`docs/reports/final-report.md`](docs/reports/final-report.md) (구현 기능, 기술, 명세와 달라진 점, 결정 사항, 주의점)
 - 단계별 보고서: [`docs/reports/`](docs/reports/)
 - 스크린샷 모음: [`docs/screenshots/`](docs/screenshots/)

@@ -1,0 +1,13 @@
+{
+  "endpoint": "POST /auth/kakao",
+  "case": "error-USER4093",
+  "httpStatus": 409,
+  "code": "USER4093",
+  "shape": {
+    "$": "object",
+    "$.code": "string",
+    "$.data": "null",
+    "$.message": "string",
+    "$.success": "boolean"
+  }
+}

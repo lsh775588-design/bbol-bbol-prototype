@@ -1,0 +1,14 @@
+{
+  "endpoint": "PATCH /users/me",
+  "case": "error-USER4002",
+  "httpStatus": 400,
+  "code": "USER4002",
+  "shape": {
+    "$": "object",
+    "$.code": "string",
+    "$.data": "object",
+    "$.data.nextChangeableAt": "datetime",
+    "$.message": "string",
+    "$.success": "boolean"
+  }
+}

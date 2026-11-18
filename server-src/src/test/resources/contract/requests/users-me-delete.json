@@ -1,0 +1,7 @@
+{
+  "method": "DELETE",
+  "path": "/users/me",
+  "auth": true,
+  "query": {},
+  "requiredQuery": []
+}
