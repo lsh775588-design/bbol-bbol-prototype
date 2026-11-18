@@ -6,7 +6,7 @@
 
 <p align="center">
   <img src="docs/screenshots/stage-5/04-home-two-ongoing.png" width="240" alt="홈 화면">
-  <img src="docs/screenshots/stage-4/01-map-overview.png" width="240" alt="퀘스트 지도">
+  <img src="docs/screenshots/stage-6/kakao-map-phone.png" width="240" alt="퀘스트 지도(카카오맵, 실기기)">
   <img src="docs/screenshots/stage-4/05-arrival-success.png" width="240" alt="도착 인증 완료">
 </p>
 
@@ -40,6 +40,8 @@
 ## 화면 둘러보기
 
 > 에뮬레이터(AVD `Medium_Phone`)에서 실제 서버와 연결해 찍은 화면입니다. 위치는 경복궁으로 고정했습니다.
+>
+> 지도 화면(위 첫 장과 3번 항목의 첫 장)은 카카오맵으로 바꾼 뒤 arm64 실기기(Galaxy A13)에서 찍은 사진입니다. 3·4번 항목의 나머지 사진은 지도가 OpenStreetMap이던 때의 에뮬레이터 화면이라 배경 지도가 지금과 다릅니다. 카카오맵 SDK는 x86_64 에뮬레이터에서 동작하지 않아 새 사진은 실기기로 다시 찍어야 합니다.
 
 ### 1. 시작하기: 로그인, 회원가입, 온보딩
 
@@ -72,7 +74,7 @@
 - 위치 권한이 없으면 **둘러보기 모드**로 지도만 볼 수 있습니다. (인증은 불가)
 
 <p align="center">
-  <img src="docs/screenshots/stage-4/01-map-overview.png" width="240" alt="지도 전체 보기">
+  <img src="docs/screenshots/stage-6/kakao-map-phone.png" width="240" alt="지도 전체 보기(카카오맵, 실기기)">
   <img src="docs/screenshots/stage-4/02-pin-sheet-accept.png" width="240" alt="장소 정보와 퀘스트 받기">
   <img src="docs/screenshots/stage-4/08-pin-states.png" width="240" alt="핀 상태 표시">
 </p>
